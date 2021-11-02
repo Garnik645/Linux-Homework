@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 		const char* filename2 = argv[2];
 
 		// open destination file only for writing
-		dst = open(filename2, O_WRONLY);
+		dst = open(filename2, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
 		
 		// check if file was not opened due to error
 		if(dst < 0)
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 	else
 	{
 		// create destination.txt file
-		dst = creat("destination.txt", S_IRWXU);
+		dst = creat("destination.txt", S_IRUSR | S_IWUSR);
 
 		// check if file was not created due to error
 		if(dst < 0)
