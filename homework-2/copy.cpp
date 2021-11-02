@@ -63,80 +63,91 @@ struct File
 			close(fd);
 		}
 	}
-
-	// create a hole inside a file
-	void make_hole(off_t x)
-	{
-		lseek(fd, x, SEEK_END);
-	}
-
-	// return file logical size
-	// set cursor at the end of the file
-	off_t log_size() const
-	{
-		return lseek(fd, 0, SEEK_END);
-	}
-
-	// return file current cursor position
-	off_t cursor_pos() const
-	{
-		return lseek(fd, 0, SEEK_CUR);
-	}
 };
 
+// function to copy data and holes from the source file into destination
 void copy(const File& src, File& dst)
 {
 	// create a hole in destination with logical size of source
-	dst.make_hole(src.log_size());
+	lseek(dst.fd, lseek(src.fd, 0, SEEK_END), SEEK_END);
 
-	// set the cursor at the begining of source
-	off_t pos = lseek(src.fd, 0, SEEK_SET);
+	// move cursor to the start of data in source
+	int last = lseek(src.fd, 0, SEEK_DATA);
 
-	bool flag = false;
+	// go over file
+    while(true){
 
-	while(lseek(src.fd, 0, SEEK_DATA) >= 0)
-	{
-		pos = src.cursor_pos();
-		off_t next_hole = lseek(src.fd, 0, SEEK_HOLE);
-		if(next_hole < 0)
+        // try jump to next beginning of hole
+        int data = lseek(src.fd, last, SEEK_HOLE);
+
+        // there was some data if we got to next hole
+        if(data > 0)
 		{
-			next_hole = lseek(src.fd, 0, SEEK_END) + 1;
-			flag = true;
-		}	
-		lseek(src.fd, pos, SEEK_SET);
-		while(src.cursor_pos() < next_hole)
-		{
-			off_t dif = next_hole - pos;
-			int buff_size = std::max((int)dif, BUFFER_MAX_SIZE);
-			char* buffer = new char[buff_size + 2];
+			// set the cursor at last
+			lseek(src.fd, last, SEEK_SET);
+			lseek(dst.fd, last, SEEK_SET);
 
-			// read from source file into buffer
-			int readBytes = read(src.fd, buffer, buff_size);
-			
-			// check if could not read due to error
-			if(readBytes < 0)
-			{
-				std::cerr << "Could not read from file due to error " << errno << std::endl;
-				exit(errno);
-			}
-			
-			// write content of buffer into destination file
-			int written = write(dst.fd, buffer, readBytes);
-			
-			// check if could not write due to error
-			if(written < 0)
-			{
-				std::cerr << "Could not write buffer due to error " << errno << std::endl;
-				exit(errno);
-			}
+			// allocate buffer
+			int buffer_size = std::min(data - last, BUFFER_MAX_SIZE);
+			char* buffer = new char[buffer_size];
 
+			// go over this segment of data
+			int i = last;
+			while(i < data)
+			{
+				// read from source
+				int rd_bytes = read(src.fd, buffer, buffer_size);
+
+				// check if could not read due to error
+				if(rd_bytes < 0)
+				{
+					std::cerr << "Something went wrong. Error " << errno << std::endl;
+					exit(errno);
+				}
+
+				// write into destination
+				int wt_bytes = write(dst.fd, buffer, buffer_size);
+
+				// check if could not write due to error
+				if(wt_bytes < 0)
+				{
+					std::cerr << "Something went wrong. Error " << errno << std::endl;
+					exit(errno);
+				}
+
+				i += buffer_size;
+			}
+			last = data;
+
+			// delete allocated memory
 			delete[] buffer;
+        }
+
+		// reached the end of file
+        if(data == 0){
+            break;
+        }
+
+		// something went wrong
+        if(data < 0){
+            std::cerr << "Something went wrong. Error " << errno << std::endl;
+            exit(errno);
 		}
-		if(flag)
-		{
-			break;
+
+		// try jump to next beginning of data
+		last = lseek(src.fd, last, SEEK_DATA);
+
+		// reached the end of file
+		if(last == -1 && errno == ENXIO){
+            break;
+        }
+
+        // something went wrong
+        if(last < 0){
+            std::cerr << "Something went wrong. Error " << errno << std::endl;
+            exit(errno);
 		}
-	}
+    }
 }
 
 int main(int argc, char** argv)
@@ -162,8 +173,8 @@ int main(int argc, char** argv)
 		// create write-only second file
 		file2 = File("destination.txt", O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
 	}
-	
-	// copy data and holes from the first file to second file
+
+	// copy file1 to file2
 	copy(file1, file2);
 
 	return 0;
