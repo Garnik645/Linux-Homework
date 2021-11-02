@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 	// allocate a buffer to read from file
 	char* buffer = new char[BUFFER_SIZE + 1];
 	
-	// start reading file
+	// start copying the file
 	while(true)
 	{
 		// read BUFFER_SIZE bytes from source file into buffer
@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 		// write content of buffer into destination file
 		int written = write(dst, buffer, readBytes);
 		
-		// check if could not read due to error
+		// check if could not write due to error
 		if(written < 0)
 		{
 			std::cerr << "Could not write buffer due to error " << errno << std::endl;
