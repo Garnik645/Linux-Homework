@@ -78,21 +78,22 @@ struct File
 		off_t temp = lseek(fd, 0, SEEK_CUR);
 
 		// variable to store size of file
-		off_t size;
+		off_t size = 0;
 
 		// move cursor to the start of data in source
-		int last = lseek(fd, 0, SEEK_DATA);
+		off_t last = lseek(fd, 0, SEEK_DATA);
 
 		// go over file
 		while(true){
 
 			// try jump to next beginning of hole
-			int data = lseek(fd, last, SEEK_HOLE);
+			off_t data = lseek(fd, last, SEEK_HOLE);
 
 			// there was some data if we got to next hole
 			if(data > 0)
 			{
 				size += data - last;
+				last = data;
 			}
 
 			// reached the end of file
