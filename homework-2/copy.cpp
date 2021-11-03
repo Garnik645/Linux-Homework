@@ -12,14 +12,14 @@ struct File
 	int fd;
 
 	// true if file descriptor points to a real file
-	bool flag;
+	bool real;
 
-	File() : fd(0), flag(false){}
+	File() : fd(0), real(false){}
 
 	// open file
 	File(const char* filename, mode_t md)
 	: fd(open(filename, md))
-	, flag(true)
+	, real(true)
 	{
 		// check if file was not opened due to error
 		if(fd < 0)
@@ -32,7 +32,7 @@ struct File
 	// open file
 	File(const char* filename, mode_t md1, mode_t md2)
 	: fd(open(filename, md1, md2))
-	, flag(true)
+	, real(true)
 	{
 		// check if file was not opened due to error
 		if(fd < 0)
@@ -45,20 +45,93 @@ struct File
 	// move assignment
 	File& operator=(File&& other)
 	{
-		if(other.flag && !flag)
+		// get file descriptor if this file doesn't point to a real file
+		if(other.real && !real)
 		{
 			fd = other.fd;
-			flag = true;
-			other.flag = false;
+			real = true;
+			other.real = false;
 		}
 		return *this;
+	}
+
+	// return logical size of file
+	off_t log_size()
+	{
+		// save current cursor position
+		off_t temp = lseek(fd, 0, SEEK_CUR);
+
+		// get file logical size
+		off_t size = lseek(fd, 0, SEEK_END);
+
+		// return curser to its previous position
+		lseek(fd, temp, SEEK_SET);
+
+		// return logical size
+		return size;
+	}
+
+	// return phisical size of file
+	off_t ph_size()
+	{
+		// save current cursor position
+		off_t temp = lseek(fd, 0, SEEK_CUR);
+
+		// variable to store size of file
+		off_t size;
+
+		// move cursor to the start of data in source
+		int last = lseek(fd, 0, SEEK_DATA);
+
+		// go over file
+		while(true){
+
+			// try jump to next beginning of hole
+			int data = lseek(fd, last, SEEK_HOLE);
+
+			// there was some data if we got to next hole
+			if(data > 0)
+			{
+				size += data - last;
+			}
+
+			// reached the end of file
+			if(data == 0){
+				break;
+			}
+
+			// something went wrong
+			if(data < 0){
+				std::cerr << "Something went wrong. Error " << errno << std::endl;
+				exit(errno);
+			}
+
+			// try jump to next beginning of data
+			last = lseek(fd, last, SEEK_DATA);
+
+			// reached the end of file
+			if(last == -1 && errno == ENXIO){
+				break;
+			}
+
+			// something went wrong
+			if(last < 0){
+				std::cerr << "Something went wrong. Error " << errno << std::endl;
+				exit(errno);
+			}
+		}
+
+		// return curser to its previous position
+		lseek(fd, temp, SEEK_SET);
+
+		return size;
 	}
 
 	// destructor
 	~File()
 	{
 		// close file if it points to a real file
-		if(flag)
+		if(real)
 		{
 			close(fd);
 		}
@@ -79,8 +152,6 @@ void copy(const File& src, File& dst)
 
         // try jump to next beginning of hole
         int data = lseek(src.fd, last, SEEK_HOLE);
-
-		std::cout << last << ' ' << data << std::endl;
 
         // there was some data if we got to next hole
         if(data > 0)
@@ -119,7 +190,7 @@ void copy(const File& src, File& dst)
 
 				i += buffer_size;
 			}
-			
+
 			last = data;
 
 			// delete allocated memory
@@ -176,6 +247,9 @@ int main(int argc, char** argv)
 		// create write-only second file
 		file2 = File("destination.txt", O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
 	}
+
+	std::cout << "Logical size of source: " << file1.log_size() << std::endl;
+	std::cout << "Physical size of source: " << file1.ph_size() << std::endl;
 
 	// copy file1 to file2
 	copy(file1, file2);
