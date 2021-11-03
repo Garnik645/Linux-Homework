@@ -45,9 +45,9 @@ struct File
 	// move assignment
 	File& operator=(File&& other)
 	{
-		fd = other.fd;
-		if(other.flag == true)
+		if(other.flag && !flag)
 		{
+			fd = other.fd;
 			flag = true;
 			other.flag = false;
 		}
@@ -79,6 +79,8 @@ void copy(const File& src, File& dst)
 
         // try jump to next beginning of hole
         int data = lseek(src.fd, last, SEEK_HOLE);
+
+		std::cout << last << ' ' << data << std::endl;
 
         // there was some data if we got to next hole
         if(data > 0)
@@ -117,6 +119,7 @@ void copy(const File& src, File& dst)
 
 				i += buffer_size;
 			}
+			
 			last = data;
 
 			// delete allocated memory
