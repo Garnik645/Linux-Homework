@@ -14,5 +14,5 @@
 
 void change_stream(std::string, const std::string&, int, mode_t);
 void create_shell_folder();
-bool get_command(char*, char**);
-void exe_command(char**);
+bool get_command(char*, char**&);
+void exe_command(char**&);

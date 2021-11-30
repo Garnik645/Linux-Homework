@@ -79,7 +79,7 @@ void create_shell_folder()
 // get input and split into command and arguments
 // return false if no command was given
 // return true otherwise
-bool get_command(char* input, char** arg)
+bool get_command(char* input, char**& arg)
 {
     std::cout << "# ";
 
@@ -125,7 +125,7 @@ bool get_command(char* input, char** arg)
 }
 
 // execute a command
-void exe_command(char** arg)
+void exe_command(char**& arg)
 {
     // get parent pid
     pid_t parent_pid = getpid();
