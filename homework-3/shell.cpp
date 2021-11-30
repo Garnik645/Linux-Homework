@@ -9,7 +9,7 @@
 #include <vector>
 #include <cerrno>
 
-#define INPUT_SIZE 256
+#define INPUT_SIZE 255
 struct stat st = {0};
 
 void change_stream(std::string dir, const std::string& filename, int stream, mode_t mode)
@@ -18,7 +18,7 @@ void change_stream(std::string dir, const std::string& filename, int stream, mod
         int dir_out = mkdir(dir.c_str(), 0777);
         if(dir_out < 0)
         {
-            std::cerr << "Something went wrong while creating the folder or permisson denied" << std::endl;
+            std::cerr << "Something went wrong while creating the folder or permission denied" << std::endl;
             exit(errno);
         }
     }
@@ -26,7 +26,7 @@ void change_stream(std::string dir, const std::string& filename, int stream, mod
     int fd = open(dir.c_str(), mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     if(fd < 0)
     {
-        std::cerr << "Something went wrong while opening or creating the file or permisson denied" << std::endl;
+        std::cerr << "Something went wrong while opening or creating the file or permission denied" << std::endl;
         exit(errno);
     }
     int dup_out = dup2(fd, stream);
@@ -39,11 +39,17 @@ void change_stream(std::string dir, const std::string& filename, int stream, mod
 
 int main()
 {
+    if(getuid() != 0)
+    {
+        std::cerr << "Permission Denied!" << std::endl;
+        exit(1);
+    }
+
     if (stat("/opt/", &st) == -1) {
         int dir_out = mkdir("/opt/", 0777);
         if(dir_out < 0)
         {
-            std::cerr << "Something went wrong while creating the folder or permisson denied" << std::endl;
+            std::cerr << "Something went wrong while creating the folder or permission denied" << std::endl;
             exit(errno);
         }
     }
@@ -52,10 +58,12 @@ int main()
         int dir_out = mkdir("/opt/silentshell/", 0777);
         if(dir_out < 0)
         {
-            std::cerr << "Something went wrong while creating the folder or permisson denied" << std::endl;
+            std::cerr << "Something went wrong while creating the folder or permission denied" << std::endl;
             exit(errno);
         }
     }
+
+    pid_t parent_pid = getpid();
 
     while(true)
     {
@@ -72,7 +80,7 @@ int main()
         std::vector<char*> arg_v;
         for(char *ptr = input; *ptr; ++ptr)
         {
-            if(*ptr == ' ')
+            if(*ptr == ' ' || *ptr == '\t')
             {
                 continue;
             }
@@ -80,8 +88,12 @@ int main()
             {
                 break;
             }
-            for(arg_v.push_back(ptr); *ptr && *ptr != ' ' && *ptr != '\n'; ++ptr);
+            for(arg_v.push_back(ptr); *ptr && *ptr != ' ' && *ptr != '\n' && *ptr != '\t'; ++ptr);
             *ptr = '\0';
+        }
+        if(arg_v.size() == 0)
+        {
+            continue;
         }
         arg = new char*[arg_v.size()];
         for(size_t i = 0; i < arg_v.size(); ++i)
@@ -93,7 +105,6 @@ int main()
         {
             return 0;
         }
-
         pid_t child_pid = fork();
         if(child_pid < 0)
         {
@@ -102,17 +113,18 @@ int main()
         }
         if(child_pid == 0)
         {
-            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "in.txt", 0, O_TRUNC | O_RDONLY | O_CREAT);
-            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "out.txt", 1, O_TRUNC | O_WRONLY | O_CREAT);
-            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "err.txt", 2, O_TRUNC | O_WRONLY | O_CREAT);
+            if(strcmp("clear", arg[0]) != 0)
+            {
+                change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "in.txt", 0, O_RDONLY | O_CREAT);
+                change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "out.txt", 1, O_WRONLY | O_CREAT | O_APPEND);
+                change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "err.txt", 2, O_WRONLY | O_CREAT | O_APPEND);
+            }
             int exe = execvp(arg[0], arg);
-            std::cout << "execvp return value: " << exe << std::endl;
             if(exe == -1)
             {
                 std::cerr << "Something went wrong while executing a program in the child process" << std::endl;
                 exit(errno);
             }
-            return 0;
         }
         else
         {
@@ -120,4 +132,6 @@ int main()
             waitpid(child_pid, &status, 0);
         }
     }
+
+    return 0;
 }
