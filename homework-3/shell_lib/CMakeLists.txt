@@ -1,0 +1,1 @@
+add_library(shell_lib shell_lib.cpp)
