@@ -2,20 +2,21 @@
 
 int main()
 {
-    // create /opt/silentshell/ folder
+    // create /opt/silentshell/ directory
     // root permisson is needed
     create_shell_folder();
 
-    // repeat until the porcess is ended
+    // repeat until the porcess is killed
     while(true)
     {
         // memory for input
         char input[INPUT_SIZE + 1];
         char** arg;
 
-        // get command, return false if no command was given
+        // get command
         if(!get_command(input, arg))
         {
+            // continue if no command was given
             continue;
         }
 

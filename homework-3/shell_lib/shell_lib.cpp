@@ -1,5 +1,6 @@
 #include "shell_lib.h"
 
+// directory check status
 struct stat st = {0};
 
 // change child process stdin, stdout, stderr stream into given path
@@ -12,7 +13,7 @@ void change_stream(std::string dir, const std::string& filename, int stream, mod
         // check for errors while creating the directory
         if(dir_out < 0)
         {
-            std::cerr << "Something went wrong while creating the folder or permission denied" << std::endl;
+            std::cerr << "Something went wrong while creating the folder" << std::endl;
             exit(errno);
         }
     }
@@ -25,7 +26,7 @@ void change_stream(std::string dir, const std::string& filename, int stream, mod
     // check for errors while opening the file
     if(fd < 0)
     {
-        std::cerr << "Something went wrong while opening or creating the file or permission denied" << std::endl;
+        std::cerr << "Something went wrong while opening or creating the file" << std::endl;
         exit(errno);
     }
 
@@ -57,7 +58,7 @@ void create_shell_folder()
         // check for errors while creating the directory
         if(dir_out < 0)
         {
-            std::cerr << "Something went wrong while creating the folder or permission denied" << std::endl;
+            std::cerr << "Something went wrong while creating the folder" << std::endl;
             exit(errno);
         }
     }
@@ -69,7 +70,7 @@ void create_shell_folder()
         // check for errors while creating the directory
         if(dir_out < 0)
         {
-            std::cerr << "Something went wrong while creating the folder or permission denied" << std::endl;
+            std::cerr << "Something went wrong while creating the folder" << std::endl;
             exit(errno);
         }
     }
@@ -129,7 +130,7 @@ void exe_command(char** arg)
     // get parent pid
     pid_t parent_pid = getpid();
 
-    // if end the process if "exit" command is given
+    // end the process if "exit" command is given
     if(strcmp("exit", arg[0]) == 0)
     {
         exit(0);
@@ -148,7 +149,7 @@ void exe_command(char** arg)
     // do in child process
     if(child_pid == 0)
     {
-        // change stdin, stdout, stderr streams only if clear command was not given
+        // change stdin, stdout, stderr streams only if "clear" command was not given
         if(strcmp("clear", arg[0]) != 0)
         {
             change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "in.std", 0, O_RDONLY | O_CREAT);
