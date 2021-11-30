@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <string.h>
 #include <string>
 #include <vector>
 #include <cerrno>
@@ -22,17 +23,31 @@ void change_stream(std::string dir, const std::string& filename, int stream, mod
         }
     }
     dir += filename;
-    int fd = open(dir.c_str(), mode, S_IRUSR | S_IWUSR);
+    int fd = open(dir.c_str(), mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     if(fd < 0)
     {
         std::cerr << "Something went wrong while opening or creating the file or permisson denied" << std::endl;
         exit(errno);
     }
-    dup2(stream, fd);
+    int dup_out = dup2(fd, stream);
+    if(dup_out < 0)
+    {
+        std::cerr << "Something went wrong while changing stdin, stdout, stderr streams" << std::endl;
+        exit(errno);
+    }
 }
 
 int main()
 {
+    if (stat("/opt/", &st) == -1) {
+        int dir_out = mkdir("/opt/", 0777);
+        if(dir_out < 0)
+        {
+            std::cerr << "Something went wrong while creating the folder or permisson denied" << std::endl;
+            exit(errno);
+        }
+    }
+
     if (stat("/opt/silentshell/", &st) == -1) {
         int dir_out = mkdir("/opt/silentshell/", 0777);
         if(dir_out < 0)
@@ -74,6 +89,11 @@ int main()
             arg[i] = arg_v[i];
         }
 
+        if(strcmp("exit", arg[0]) == 0)
+        {
+            return 0;
+        }
+
         pid_t child_pid = fork();
         if(child_pid < 0)
         {
@@ -82,9 +102,9 @@ int main()
         }
         if(child_pid == 0)
         {
-            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "in.std", 0, O_TRUNC | O_RDONLY | O_CREAT);
-            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "out.std", 1, O_TRUNC | O_WRONLY | O_CREAT);
-            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "err.std", 2, O_TRUNC | O_WRONLY | O_CREAT);
+            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "in.txt", 0, O_TRUNC | O_RDONLY | O_CREAT);
+            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "out.txt", 1, O_TRUNC | O_WRONLY | O_CREAT);
+            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "err.txt", 2, O_TRUNC | O_WRONLY | O_CREAT);
             int exe = execvp(arg[0], arg);
             std::cout << "execvp return value: " << exe << std::endl;
             if(exe == -1)
