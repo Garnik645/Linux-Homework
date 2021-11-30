@@ -2,7 +2,7 @@
 
 int main()
 {
-    // create /opt/silentshell/ directory
+    // create /opt/silentshell/{PID} directory
     // root permisson is needed
     create_shell_dir(getpid());
 
