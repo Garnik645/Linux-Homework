@@ -64,12 +64,14 @@ void create_shell_folder()
     }
 }
 
-bool get_command(char* input, char** arg)
+bool get_command(char** arg)
 {
+    char input[INPUT_SIZE + 1];
+    std::cout << "# ";
     fgets(input, INPUT_SIZE, stdin);
     if(*input == '\n')
     {
-        return true;
+        return false;
     }
 
     std::vector<char*> arg_v;
@@ -88,18 +90,19 @@ bool get_command(char* input, char** arg)
     }
     if(arg_v.size() == 0)
     {
-        return true;
+        return false;
     }
     arg = new char*[arg_v.size()];
     for(size_t i = 0; i < arg_v.size(); ++i)
     {
         arg[i] = arg_v[i];
     }
-    return false;
+    return true;
 }
 
-void call_command(pid_t parent, char** arg)
+void call_command(char** arg)
 {
+    pid_t parent_pid = getpid();
     if(strcmp("exit", arg[0]) == 0)
     {
         exit(0);
@@ -114,9 +117,9 @@ void call_command(pid_t parent, char** arg)
     {
         if(strcmp("clear", arg[0]) != 0)
         {
-            change_stream("/opt/silentshell/" + std::to_string(parent) + "/", "in.txt", 0, O_RDONLY | O_CREAT);
-            change_stream("/opt/silentshell/" + std::to_string(parent) + "/", "out.txt", 1, O_WRONLY | O_CREAT | O_APPEND);
-            change_stream("/opt/silentshell/" + std::to_string(parent) + "/", "err.txt", 2, O_WRONLY | O_CREAT | O_APPEND);
+            change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "in.std", 0, O_RDONLY | O_CREAT);
+            change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "out.std", 1, O_WRONLY | O_CREAT | O_APPEND);
+            change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "err.std", 2, O_WRONLY | O_CREAT | O_APPEND);
         }
         int exe = execvp(arg[0], arg);
         if(exe == -1)
@@ -135,23 +138,14 @@ void call_command(pid_t parent, char** arg)
 int main()
 {
     create_shell_folder();
-
-    pid_t parent_pid = getpid();
-
     while(true)
     {
-        char input[INPUT_SIZE + 1];
         char** arg;
-
-        std::cout << "# ";
-
-        if(get_command(input, arg))
+        if(!get_command(arg))
         {
             continue;
         }
-        
-        call_command(parent_pid, arg);
+        call_command(arg);
     }
-
     return 0;
 }
