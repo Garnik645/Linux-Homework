@@ -3,35 +3,77 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <cerrno>
+#include <sys/stat.h>
 #include <string>
 #include <vector>
+#include <cerrno>
+
+#define INPUT_SIZE 256
+struct stat st = {0};
+
+void change_stream(std::string dir, const std::string& filename, int stream, mode_t mode)
+{
+    if (stat(dir.c_str(), &st) == -1) {
+        int dir_out = mkdir(dir.c_str(), 0777);
+        if(dir_out < 0)
+        {
+            std::cerr << "Something went wrong while creating the folder or permisson denied" << std::endl;
+            exit(errno);
+        }
+    }
+    dir += filename;
+    int fd = open(dir.c_str(), mode, S_IRUSR | S_IWUSR);
+    if(fd < 0)
+    {
+        std::cerr << "Something went wrong while opening or creating the file or permisson denied" << std::endl;
+        exit(errno);
+    }
+    dup2(stream, fd);
+}
 
 int main()
 {
+    if (stat("/opt/silentshell/", &st) == -1) {
+        int dir_out = mkdir("/opt/silentshell/", 0777);
+        if(dir_out < 0)
+        {
+            std::cerr << "Something went wrong while creating the folder or permisson denied" << std::endl;
+            exit(errno);
+        }
+    }
+
     while(true)
     {
-        std::string arg;
-        std::getline(std::cin, arg);
-        std::string command;
-        std::vector<std::string> words{};
-        size_t pos = 0;
-        arg.push_back(' ');
-        while((pos = arg.find(' ')) != std::string::npos)
+        char input[INPUT_SIZE + 1];
+        char** arg;
+
+        std::cout << (getuid() == 0 ? "# " : "$ ");
+        fgets(input, INPUT_SIZE, stdin);
+        if(*input == '\n')
         {
-            words.push_back(arg.substr(0, pos));
-            arg.erase(0, pos + 1);
+            continue;
         }
-        command = words[0];
-        char** arg_list = new char*[words.size()];
-        for(int i = 0; i < words.size(); ++i)
+
+        std::vector<char*> arg_v;
+        for(char *ptr = input; *ptr; ++ptr)
         {
-            arg_list[i] = new char[words[i].size()];
-            for(int j = 0; j < words[i].size(); ++j)
+            if(*ptr == ' ')
             {
-                arg_list[i][j] = words[i][j];
+                continue;
             }
+            if(*ptr == '\n')
+            {
+                break;
+            }
+            for(arg_v.push_back(ptr); *ptr && *ptr != ' ' && *ptr != '\n'; ++ptr);
+            *ptr = '\0';
         }
+        arg = new char*[arg_v.size()];
+        for(size_t i = 0; i < arg_v.size(); ++i)
+        {
+            arg[i] = arg_v[i];
+        }
+
         pid_t child_pid = fork();
         if(child_pid < 0)
         {
@@ -40,18 +82,22 @@ int main()
         }
         if(child_pid == 0)
         {
-            int exe = 0;
-            exe = execvp(command.c_str(), arg_list);
+            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "in.std", 0, O_TRUNC | O_RDONLY | O_CREAT);
+            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "out.std", 1, O_TRUNC | O_WRONLY | O_CREAT);
+            change_stream("/opt/silentshell/" + std::to_string(getpid()) + "/", "err.std", 2, O_TRUNC | O_WRONLY | O_CREAT);
+            int exe = execvp(arg[0], arg);
+            std::cout << "execvp return value: " << exe << std::endl;
             if(exe == -1)
             {
-                std::cerr << "Something went wrong while executing a program" << std::endl;
+                std::cerr << "Something went wrong while executing a program in the child process" << std::endl;
                 exit(errno);
             }
+            return 0;
         }
         else
         {
             int status;
-            waitpid(-1, &status, 0);
+            waitpid(child_pid, &status, 0);
         }
     }
 }
