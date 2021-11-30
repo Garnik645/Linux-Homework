@@ -37,7 +37,7 @@ void change_stream(std::string dir, const std::string& filename, int stream, mod
     }
 }
 
-int main()
+void create_shell_folder()
 {
     if(getuid() != 0)
     {
@@ -62,6 +62,79 @@ int main()
             exit(errno);
         }
     }
+}
+
+bool get_command(char* input, char** arg)
+{
+    fgets(input, INPUT_SIZE, stdin);
+    if(*input == '\n')
+    {
+        return true;
+    }
+
+    std::vector<char*> arg_v;
+    for(char *ptr = input; *ptr; ++ptr)
+    {
+        if(*ptr == ' ' || *ptr == '\t')
+        {
+            continue;
+        }
+        if(*ptr == '\n')
+        {
+            break;
+        }
+        for(arg_v.push_back(ptr); *ptr && *ptr != ' ' && *ptr != '\n' && *ptr != '\t'; ++ptr);
+        *ptr = '\0';
+    }
+    if(arg_v.size() == 0)
+    {
+        return true;
+    }
+    arg = new char*[arg_v.size()];
+    for(size_t i = 0; i < arg_v.size(); ++i)
+    {
+        arg[i] = arg_v[i];
+    }
+    return false;
+}
+
+void call_command(pid_t parent, char** arg)
+{
+    if(strcmp("exit", arg[0]) == 0)
+    {
+        exit(0);
+    }
+    pid_t child_pid = fork();
+    if(child_pid < 0)
+    {
+        std::cerr << "Something went wrong while cloning the process" << std::endl;
+        exit(errno);
+    }
+    if(child_pid == 0)
+    {
+        if(strcmp("clear", arg[0]) != 0)
+        {
+            change_stream("/opt/silentshell/" + std::to_string(parent) + "/", "in.txt", 0, O_RDONLY | O_CREAT);
+            change_stream("/opt/silentshell/" + std::to_string(parent) + "/", "out.txt", 1, O_WRONLY | O_CREAT | O_APPEND);
+            change_stream("/opt/silentshell/" + std::to_string(parent) + "/", "err.txt", 2, O_WRONLY | O_CREAT | O_APPEND);
+        }
+        int exe = execvp(arg[0], arg);
+        if(exe == -1)
+        {
+            std::cerr << "Something went wrong while executing a program in the child process" << std::endl;
+            exit(errno);
+        }
+    }
+    else
+    {
+        int status;
+        waitpid(child_pid, &status, 0);
+    }
+}
+
+int main()
+{
+    create_shell_folder();
 
     pid_t parent_pid = getpid();
 
@@ -70,67 +143,14 @@ int main()
         char input[INPUT_SIZE + 1];
         char** arg;
 
-        std::cout << (getuid() == 0 ? "# " : "$ ");
-        fgets(input, INPUT_SIZE, stdin);
-        if(*input == '\n')
+        std::cout << "# ";
+
+        if(get_command(input, arg))
         {
             continue;
         }
-
-        std::vector<char*> arg_v;
-        for(char *ptr = input; *ptr; ++ptr)
-        {
-            if(*ptr == ' ' || *ptr == '\t')
-            {
-                continue;
-            }
-            if(*ptr == '\n')
-            {
-                break;
-            }
-            for(arg_v.push_back(ptr); *ptr && *ptr != ' ' && *ptr != '\n' && *ptr != '\t'; ++ptr);
-            *ptr = '\0';
-        }
-        if(arg_v.size() == 0)
-        {
-            continue;
-        }
-        arg = new char*[arg_v.size()];
-        for(size_t i = 0; i < arg_v.size(); ++i)
-        {
-            arg[i] = arg_v[i];
-        }
-
-        if(strcmp("exit", arg[0]) == 0)
-        {
-            return 0;
-        }
-        pid_t child_pid = fork();
-        if(child_pid < 0)
-        {
-            std::cerr << "Something went wrong while cloning the process" << std::endl;
-            exit(errno);
-        }
-        if(child_pid == 0)
-        {
-            if(strcmp("clear", arg[0]) != 0)
-            {
-                change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "in.txt", 0, O_RDONLY | O_CREAT);
-                change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "out.txt", 1, O_WRONLY | O_CREAT | O_APPEND);
-                change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "err.txt", 2, O_WRONLY | O_CREAT | O_APPEND);
-            }
-            int exe = execvp(arg[0], arg);
-            if(exe == -1)
-            {
-                std::cerr << "Something went wrong while executing a program in the child process" << std::endl;
-                exit(errno);
-            }
-        }
-        else
-        {
-            int status;
-            waitpid(child_pid, &status, 0);
-        }
+        
+        call_command(parent_pid, arg);
     }
 
     return 0;
