@@ -1,6 +1,5 @@
 #include "shell_lib.h"
 
-#define INPUT_SIZE 255
 struct stat st = {0};
 
 void change_stream(std::string dir, const std::string& filename, int stream, mode_t mode)
@@ -55,9 +54,8 @@ void create_shell_folder()
     }
 }
 
-bool get_command(char** arg)
+bool get_command(char* input, char** arg)
 {
-    char input[INPUT_SIZE + 1];
     std::cout << "# ";
     fgets(input, INPUT_SIZE, stdin);
     if(*input == '\n')
@@ -91,7 +89,7 @@ bool get_command(char** arg)
     return true;
 }
 
-void call_command(char** arg)
+void exe_command(char** arg)
 {
     pid_t parent_pid = getpid();
     if(strcmp("exit", arg[0]) == 0)
@@ -123,5 +121,6 @@ void call_command(char** arg)
     {
         int status;
         waitpid(child_pid, &status, 0);
+        delete [] arg;
     }
 }

@@ -10,7 +10,9 @@
 #include <vector>
 #include <cerrno>
 
-void change_stream(std::string dir, const std::string& filename, int stream, mode_t mode);
+#define INPUT_SIZE 255
+
+void change_stream(std::string, const std::string&, int, mode_t);
 void create_shell_folder();
-bool get_command(char** arg);
-void call_command(char** arg);
+bool get_command(char*, char**);
+void exe_command(char**);
