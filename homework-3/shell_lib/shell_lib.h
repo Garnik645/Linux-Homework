@@ -7,12 +7,13 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <string>
+#include <filesystem>
 #include <vector>
 #include <cerrno>
 
 #define INPUT_SIZE 255
 
 void change_stream(std::string, const std::string&, int, mode_t);
-void create_shell_folder();
+void create_shell_dir(pid_t);
 bool get_command(char*, char**&);
 void exe_command(char**&);

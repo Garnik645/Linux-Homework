@@ -4,7 +4,7 @@ int main()
 {
     // create /opt/silentshell/ directory
     // root permisson is needed
-    create_shell_folder();
+    create_shell_dir(getpid());
 
     // repeat until the porcess is killed
     while(true)

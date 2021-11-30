@@ -4,24 +4,10 @@
 struct stat st = {0};
 
 // change child process stdin, stdout, stderr stream into given path
-void change_stream(std::string dir, const std::string& filename, int stream, mode_t mode)
+void change_stream(const std::string& path, int stream, mode_t mode)
 {
-    // check if directory doesn't exist, create one
-    if (stat(dir.c_str(), &st) == -1) {
-        int dir_out = mkdir(dir.c_str(), 0777);
-
-        // check for errors while creating the directory
-        if(dir_out < 0)
-        {
-            std::cerr << "Something went wrong while creating the folder" << std::endl;
-            exit(errno);
-        }
-    }
-    // add filename to the path
-    dir += filename;
-
     // open the file
-    int fd = open(dir.c_str(), mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    int fd = open(path.c_str(), mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     
     // check for errors while opening the file
     if(fd < 0)
@@ -42,7 +28,7 @@ void change_stream(std::string dir, const std::string& filename, int stream, mod
 }
 
 // create the folder /opt/silentshell/ directory, where all the child process streams whould be directed
-void create_shell_folder()
+void create_shell_dir(pid_t parent_pid)
 {
     // check for root permission
     if(getuid() != 0)
@@ -51,29 +37,8 @@ void create_shell_folder()
         exit(1);
     }
 
-    // check if /opt/ directory doesn't exist, create
-    if (stat("/opt/", &st) == -1) {
-        int dir_out = mkdir("/opt/", 0777);
-
-        // check for errors while creating the directory
-        if(dir_out < 0)
-        {
-            std::cerr << "Something went wrong while creating the folder" << std::endl;
-            exit(errno);
-        }
-    }
-
-    // check if /opt/silentshell/ directory doesn't exist, create
-    if (stat("/opt/silentshell/", &st) == -1) {
-        int dir_out = mkdir("/opt/silentshell/", 0777);
-
-        // check for errors while creating the directory
-        if(dir_out < 0)
-        {
-            std::cerr << "Something went wrong while creating the folder" << std::endl;
-            exit(errno);
-        }
-    }
+    // create /opt/silentshell/
+    std::filesystem::create_directories("/opt/silentshell/" + std::to_string(parent_pid) + '/');
 }
 
 // get input and split into command and arguments
@@ -152,9 +117,9 @@ void exe_command(char**& arg)
         // change stdin, stdout, stderr streams only if "clear" command was not given
         if(strcmp("clear", arg[0]) != 0)
         {
-            change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "in.std", 0, O_RDONLY | O_CREAT);
-            change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "out.std", 1, O_WRONLY | O_CREAT | O_APPEND);
-            change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/", "err.std", 2, O_WRONLY | O_CREAT | O_APPEND);
+            change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/in.std", 0, O_RDONLY | O_CREAT);
+            change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/out.std", 1, O_WRONLY | O_CREAT | O_APPEND);
+            change_stream("/opt/silentshell/" + std::to_string(parent_pid) + "/err.std", 2, O_WRONLY | O_CREAT | O_APPEND);
         }
 
         // execute the command
@@ -176,5 +141,6 @@ void exe_command(char**& arg)
         
         // free allocated memory
         delete [] arg;
+        arg = nullptr;
     }
 }
