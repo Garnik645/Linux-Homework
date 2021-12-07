@@ -2,7 +2,7 @@
 
 int main()
 {
-    // create 2000 x 4000 matrix
+    // create a matrix of size 2000 x 4000
     parallel_matrix mtrx(2000, 4000);
     
     // initialize matrix with random numbers

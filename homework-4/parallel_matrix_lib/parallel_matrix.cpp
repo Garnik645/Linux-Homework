@@ -1,23 +1,23 @@
 #include "parallel_matrix.h"
 
-// arg struct to pass to threads
+// struct to pass arguments to threads
 struct arg
 {
     // pointer to matrix
     std::vector<std::vector<int>>* data = nullptr;
 
     // thread calculates matrix elements with index
-    // rest, t + rest, 2 * t + rest, ...
+    // rest, thread_num + rest, 2 * thread_num + rest, ...
     size_t rest = 0;
 
     // number of threads
-    size_t t = 0;
+    size_t thread_num = 0;
 
     // basic constructor
     arg(std::vector<std::vector<int>>* _data = nullptr, size_t _rest = 0, size_t _t = 0)
         : data(_data)
         , rest(_rest)
-        , t(_t)
+        , thread_num(_t)
         {}
 };
 
@@ -41,9 +41,9 @@ void* thread_sum(void* in)
     size_t el_count = col * row;
     
     // go through elements with index
-    // rest, t + rest, 2 * t + rest, ...
+    // rest, thread_num + rest, 2 * thread_num + rest, ...
     // and add to the result
-    for(size_t l = th_arg->rest; l < el_count; l += th_arg->t)
+    for(size_t l = th_arg->rest; l < el_count; l += th_arg->thread_num)
     {
         size_t i = l / row;
         size_t j = l % row;
@@ -53,7 +53,7 @@ void* thread_sum(void* in)
 }
 
 // matrix constructor
-// create a matrix with size N x M
+// create a matrix of size N x M
 parallel_matrix::parallel_matrix(size_t n, size_t m)
 {
     assert(n > 0 && m > 0);
@@ -93,26 +93,26 @@ int parallel_matrix::sum()
     return result;
 }
 
-// calculate sum of all the elements in the matrix t threads
-int parallel_matrix::sum_parallel(size_t t)
+// calculate sum of all the elements in the matrix with threads
+int parallel_matrix::sum_parallel(size_t thread_num)
 {
-    // check if t is a natural number
-    assert(t > 0);
+    // check if thread_num is a natural number
+    assert(thread_num > 0);
 
     // store the result
     int result = 0;
 
     // allocate memory for thread ID
-    pthread_t* threads = new pthread_t[t];
+    pthread_t* threads = new pthread_t[thread_num];
 
     // allocate memory for arguments
-    arg* thread_args = new arg[t];
+    arg* thread_args = new arg[thread_num];
 
     // divide matrix into pieces and create threads
-    for(size_t i = 0; i < t; ++i)
+    for(size_t i = 0; i < thread_num; ++i)
     {
         // store argument
-        thread_args[i] = arg(&mtrx, i, t);
+        thread_args[i] = arg(&mtrx, i, thread_num);
 
         // create a thread
         int thread_out = pthread_create(&threads[i], NULL, thread_sum, &thread_args[i]);
@@ -129,7 +129,7 @@ int parallel_matrix::sum_parallel(size_t t)
     void* thread_result;
 
     // for every thread
-    for(size_t i = 0; i < t; ++i)
+    for(size_t i = 0; i < thread_num; ++i)
     {
         // join thread
         int thread_out = pthread_join(threads[i], &thread_result);
