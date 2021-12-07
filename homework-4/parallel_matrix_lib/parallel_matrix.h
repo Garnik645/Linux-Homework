@@ -3,16 +3,23 @@
 #include <vector>
 #include <chrono>
 #include <functional>
+#include <random>
+#include <pthread.h>
+#include <cassert>
+
+struct arg;
+void* thread_sum(void* in);
 
 class parallel_matrix
 {
 private:
     std::vector<std::vector<int>> mtrx;
+
 public:
-    parallel_matrix(int n, int m);
+    parallel_matrix(size_t n, size_t m);
     void init();
     int sum();
-    int sum_parallel(int t);
+    int sum_parallel(size_t t);
 };
 
 void measure_time(std::function<int(int)> func, int x);
