@@ -14,28 +14,19 @@ struct arg
 
 void* thread_sum(void* in)
 {
-    int* ans = new int;
+    int ans = 0;
     arg* th_arg = (arg*) in;
     std::vector<std::vector<int>>* th_mtrx = th_arg->data;
     size_t col = th_mtrx->size();
     size_t row = (th_mtrx->at(0)).size();
-    // for(size_t i = 0; i < col; ++i)
-    // {
-    //     for(size_t j = 0; j < row; ++j)
-    //     {
-    //         std::cout << (*th_mtrx)[i][j] << ' ';
-    //     }
-    //     std::cout << std::endl;
-    // }
-    // std::cout << std::endl;
     size_t el_count = col * row;
     for(size_t l = th_arg->rest; l < el_count; l += th_arg->t)
     {
         size_t i = l / row;
         size_t j = l % row;
-        *ans += (*th_mtrx)[i][j];
+        ans += (*th_mtrx)[i][j];
     }
-    return (void*) ans;
+    return (void*) new int(ans);
 }
 
 parallel_matrix::parallel_matrix(size_t n, size_t m)
@@ -79,8 +70,8 @@ int parallel_matrix::sum_parallel(size_t t)
 {
     assert(t > 0);
     int result = 0;
-    std::vector<pthread_t> threads(t);
-    std::vector<arg> thread_args(t);
+    pthread_t* threads = new pthread_t[t];
+    arg* thread_args = new arg[t];
     for(size_t i = 0; i < t; ++i)
     {
         thread_args[i] = arg(&mtrx, i, t);
@@ -91,9 +82,9 @@ int parallel_matrix::sum_parallel(size_t t)
             exit(thread_out);
         }
     }
+    void* thread_result;
     for(size_t i = 0; i < t; ++i)
     {
-        void* thread_result;
         int thread_out = pthread_join(threads[i], &thread_result);
         if(thread_out != 0)
         {
@@ -104,6 +95,8 @@ int parallel_matrix::sum_parallel(size_t t)
         result += *thread_result_int;
         delete thread_result_int;
     }
+    delete[] threads;
+    delete[] thread_args;
     return result;
 }
 
