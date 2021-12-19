@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <functional>
 #include <queue>
+#include <unistd.h>
 
 void* consumer(void*);
 
@@ -19,5 +20,6 @@ private:
 public:
     parallel_scheduler(size_t);
     void run(std::function<void(void*)>, void*);
+    bool done();
     ~parallel_scheduler();
 };
