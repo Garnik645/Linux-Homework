@@ -10,7 +10,7 @@ void error_check(int out)
     }
 }
 
-// every thread represnt a consumer which will run the function in the queue
+// every thread represent a consumer, which will run the function from the queue
 void* consumer(void* arg)
 {
     // get arguments
@@ -27,12 +27,12 @@ void* consumer(void* arg)
         // lock
         error_check(pthread_mutex_lock(data->mutex));
 
-        // wait if queue is empty
+        // wait while queue is empty
         while(data->func_queue.empty())
         {
             error_check(pthread_cond_wait(data->cond, data->mutex));
             
-            // check if work is done
+            // check if all work is done
             if(!data->is_working)
             {
                 error_check(pthread_mutex_unlock(data->mutex));
@@ -54,7 +54,7 @@ void* consumer(void* arg)
     return nullptr;
 }
 
-// constructor which gets number of threads (consumers)
+// constructor which gets number of threads (number of consumers)
 parallel_scheduler::parallel_scheduler(size_t _thread_count)
 : thread_count(_thread_count)
 , threads(new pthread_t[_thread_count])
