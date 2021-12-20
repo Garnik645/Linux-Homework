@@ -72,6 +72,9 @@ parallel_scheduler::parallel_scheduler(size_t _thread_count)
 // destructor
 parallel_scheduler::~parallel_scheduler()
 {
+    // wait until all the functions in the queue are executed
+    while(!func_queue.empty());
+
     // finish thread work to be able to join them
     is_working = false;
 

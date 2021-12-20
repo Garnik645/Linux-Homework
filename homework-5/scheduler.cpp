@@ -18,8 +18,13 @@ void inc(void* x)
 
 int main()
 {
-    // parallel scheduler with 40 threads was created
-    parallel_scheduler* scheduler = new parallel_scheduler(40);
+    // get number of threads
+    std::cout << "Enter number of threads : ";
+    int n;
+    std::cin >> n;
+
+    // create parallel scheduler with N threads
+    parallel_scheduler* scheduler = new parallel_scheduler(n);
 
     // argument for increment function
     inc_arg* arg = new inc_arg;
@@ -32,15 +37,17 @@ int main()
         scheduler->run(inc, (void*)arg);
     }
 
-    // wait 1 second
-    sleep(1);
-
+    // destroy scheduler
+    delete scheduler;
+    
     // print the result
     std::cout << arg->x << std::endl;
 
+    // destory mutex
+    error_check(pthread_mutex_destroy(&arg->mt));
+
     // free allocated memory
     delete arg;
-    delete scheduler;
 
     return 0;
 }

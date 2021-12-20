@@ -3,7 +3,6 @@
 #include <pthread.h>
 #include <functional>
 #include <queue>
-#include <unistd.h>
 
 void error_check(int);
 void* consumer(void*);
