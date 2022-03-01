@@ -10,12 +10,14 @@
 void handler(int signo, siginfo_t *info, void *vcontext)
 {
     std::cout << "Signal Handler for signal N-" << signo << std::endl;
-    auto* context = static_cast<ucontext_t*>(vcontext);
     std::cout << "-- PID of the sender : " << info->si_pid << std::endl;
     std::cout << "-- UID of the sender : " << info->si_uid << std::endl;
-    struct passwd *pw = getpwuid (info->si_uid);
+
+    struct passwd *pw = getpwuid(info->si_uid);
     auto name = static_cast<std::string>(pw->pw_name);
     std::cout << "-- User name : " << name << std::endl;
+
+    auto* context = static_cast<ucontext_t*>(vcontext);
     auto mcontext = context->uc_mcontext;
     std::cout << "-- RIP register : " << mcontext.gregs[REG_RIP] << std::endl;
     std::cout << "-- RAX register : " << mcontext.gregs[REG_RAX] << std::endl;
