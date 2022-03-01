@@ -14,8 +14,10 @@ void handler(int signo, siginfo_t *info, void *vcontext)
     std::cout << "-- UID of the sender : " << info->si_uid << std::endl;
 
     struct passwd *pw = getpwuid(info->si_uid);
-    auto name = static_cast<std::string>(pw->pw_name);
-    std::cout << "-- User name : " << name << std::endl;
+    if (pw != nullptr) {
+        auto name = static_cast<std::string>(pw->pw_name);
+        std::cout << "-- User name : " << name << std::endl;
+    }
 
     auto* context = static_cast<ucontext_t*>(vcontext);
     auto mcontext = context->uc_mcontext;
