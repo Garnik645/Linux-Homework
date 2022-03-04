@@ -1,7 +1,7 @@
 #include "buffer_lib/buffer.h"
 
 int main() {
-    Queue q("465");
+    Stack q("777");
     while (true) {
         char c;
         std::cin >> c;

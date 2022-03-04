@@ -28,12 +28,12 @@ public:
     char read(int i);
 };
 
-class Queue : Buffer {
+class Stack : Buffer {
     int super_block;
     sem_t *empty_sync;
     sem_t *full_sync;
 public:
-    explicit Queue(const std::string &id);
+    explicit Stack(const std::string &id);
 
     void push(char c);
 
