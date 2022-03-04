@@ -2,9 +2,14 @@
 
 int main() {
     Buffer buff("425");
-    char x;
-    while (true) {
-        std::cout << buff.read(0) << buff.read(1) << buff.read(2) << std::endl;
+    while(true)
+    {
+        char c = 'a';
+        int i = 0;
+        buff.write(i, c);
         sleep(1);
+        ++i;
+        ++c;
+        i %= 3;
     }
 }
