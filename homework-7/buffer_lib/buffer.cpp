@@ -30,6 +30,7 @@ char Buffer::read(int i) {
 Buffer::Buffer(const std::string &id) : capacity(getpagesize()) {
     std::string buffer_name = "/prod-cons-buffer-" + id;
     std::string crit_name = "/prod-cons-buffer-crit-sem-" + id;
+
     int fd = shm_open(buffer_name.c_str(), O_RDWR | O_CREAT, 0777);
     check(fd, -1, "shm_open");
 
@@ -55,8 +56,10 @@ Buffer::Buffer(const std::string &id) : capacity(getpagesize()) {
 Stack::Stack(const std::string &id) : Buffer(id), super_block(sizeof(int)) {
     std::string empty_name = "/prod-cons-buffer-empty-sem-" + id;
     std::string full_name = "/prod-cons-buffer-full-sem-" + id;
+
     empty_sync = sem_open(empty_name.c_str(), O_RDWR | O_CREAT, 0777, 0);
     check(empty_sync, SEM_FAILED, "sem_open");
+
     full_sync = sem_open(full_name.c_str(), O_RDWR | O_CREAT, 0777, capacity - super_block);
     check(full_sync, SEM_FAILED, "sem_open");
 }
@@ -64,8 +67,10 @@ Stack::Stack(const std::string &id) : Buffer(id), super_block(sizeof(int)) {
 void Stack::push(char c) {
     check(sem_wait(full_sync), -1, "sem_wait");
     check(sem_wait(crit_sync), -1, "sem_wait");
+
     int *idata = (int *) data;
     data[super_block + (*idata)++] = c;
+
     check(sem_post(crit_sync), -1, "sem_post");
     check(sem_post(empty_sync), -1, "sem_post");
 }
@@ -73,8 +78,10 @@ void Stack::push(char c) {
 char Stack::pop() {
     check(sem_wait(empty_sync), -1, "sem_wait");
     check(sem_wait(crit_sync), -1, "sem_wait");
+
     int *idata = (int *) data;
     char result = data[super_block + --(*idata)];
+
     check(sem_post(crit_sync), -1, "sem_post");
     check(sem_post(full_sync), -1, "sem_post");
     return result;
