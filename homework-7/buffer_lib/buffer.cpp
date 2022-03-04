@@ -49,7 +49,7 @@ Buffer::Buffer(const std::string &id) : capacity(getpagesize()) {
 
     void *shm = mmap(nullptr, capacity, PROT_WRITE, MAP_SHARED, fd, 0);
     check(shm, MAP_FAILED, "mmap");
-    data = static_cast<char *>(shm);
+    data = (char *) shm;
 }
 
 Stack::Stack(const std::string &id) : Buffer(id), super_block(sizeof(int)) {
@@ -64,7 +64,7 @@ Stack::Stack(const std::string &id) : Buffer(id), super_block(sizeof(int)) {
 void Stack::push(char c) {
     check(sem_wait(full_sync), -1, "sem_wait");
     check(sem_wait(crit_sync), -1, "sem_wait");
-    int* idata = (int*)data;
+    int *idata = (int *) data;
     data[super_block + (*idata)++] = c;
     check(sem_post(crit_sync), -1, "sem_post");
     check(sem_post(empty_sync), -1, "sem_post");
@@ -73,7 +73,7 @@ void Stack::push(char c) {
 char Stack::pop() {
     check(sem_wait(empty_sync), -1, "sem_wait");
     check(sem_wait(crit_sync), -1, "sem_wait");
-    int* idata = (int*)data;
+    int *idata = (int *) data;
     char result = data[super_block + --(*idata)];
     check(sem_post(crit_sync), -1, "sem_post");
     check(sem_post(full_sync), -1, "sem_post");

@@ -32,6 +32,7 @@ class Stack : Buffer {
     int super_block;
     sem_t *empty_sync;
     sem_t *full_sync;
+
 public:
     explicit Stack(const std::string &id);
 
