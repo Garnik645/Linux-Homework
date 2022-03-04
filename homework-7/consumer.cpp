@@ -3,6 +3,6 @@
 int main() {
     Stack q("777");
     while (true) {
-        std::cout << q.pop();
+        std::cout << q.pop() << std::flush;
     }
 }
