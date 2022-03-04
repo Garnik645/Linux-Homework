@@ -10,41 +10,41 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-class Buffer{
+class Buffer {
 private:
     sem_t *crit_sync;
     sem_t *empty_sync;
     sem_t *full_sync;
-    char *shm;
+    char *data;
     int capacity;
     int size;
 
     template<typename T>
-    static void check(T value, T error_value, const std::string& func_name)
-    {
+    static void check(T value, T error_value, const std::string &func_name) {
         if (value == error_value) {
             std::cerr << "something went wrong with " << func_name << ", error " << errno << '\n';
             exit(errno);
         }
     }
 
+public:
     char pop() {
         check(sem_wait(full_sync), -1, "sem_wait");
         check(sem_wait(crit_sync), -1, "sem_wait");
-
+        char result = data[size--];
         check(sem_post(crit_sync), -1, "sem_post");
         check(sem_post(empty_sync), -1, "sem_post");
+        return result;
     }
 
     void push(char c) {
         check(sem_wait(empty_sync), -1, "sem_wait");
         check(sem_wait(crit_sync), -1, "sem_wait");
-
-        check(sem_wait(crit_sync), -1, "sem_post");
+        data[size++] = c;
+        check(sem_post(crit_sync), -1, "sem_post");
         check(sem_post(full_sync), -1, "sem_post");
     }
 
-public:
     explicit Buffer(int _capacity = getpagesize()) : capacity(_capacity), size(0) {
         int fd = shm_open("/prod-cons-buffer", O_RDWR | O_CREAT, 0777);
         check(fd, -1, "shm_open");
@@ -67,9 +67,9 @@ public:
 
         check(sem_post(crit_sync), -1, "sem_post");
 
-        void* vshm = mmap(nullptr, capacity, PROT_WRITE, MAP_SHARED, fd, 0);
-        check(vshm, MAP_FAILED, "mmap");
-        shm = static_cast<char*>(vshm);
+        void *shm = mmap(nullptr, capacity, PROT_WRITE, MAP_SHARED, fd, 0);
+        check(shm, MAP_FAILED, "mmap");
+        data = static_cast<char *>(shm);
     }
 };
 
