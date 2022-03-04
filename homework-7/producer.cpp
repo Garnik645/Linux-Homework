@@ -1,14 +1,10 @@
-#include "buffer.h"
+#include "buffer_lib/buffer.h"
 
 int main() {
-    Buffer buff("425");
-    char c = 'a';
-    int i = 0;
+    Queue q("465");
     while (true) {
-        buff.write(i, c);
-        sleep(1);
-        ++i;
-        ++c;
-        i %= 3;
+        char c;
+        std::cin >> c;
+        q.push(c);
     }
 }
