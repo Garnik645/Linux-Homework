@@ -2,10 +2,9 @@
 
 int main() {
     Buffer buff("425");
-    while(true)
-    {
-        char c = 'a';
-        int i = 0;
+    char c = 'a';
+    int i = 0;
+    while (true) {
         buff.write(i, c);
         sleep(1);
         ++i;

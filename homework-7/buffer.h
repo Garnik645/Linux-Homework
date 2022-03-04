@@ -44,7 +44,7 @@ public:
         return result;
     }
 
-    explicit Buffer(const std::string& id) : capacity(getpagesize()) {
+    explicit Buffer(const std::string &id) : capacity(getpagesize()) {
         std::string buffer_name = "/prod-cons-buffer-" + id;
         std::string crit_name = "/prod-cons-buffer-crit-sem-" + id;
         int fd = shm_open(buffer_name.c_str(), O_RDWR | O_CREAT, 0777);
