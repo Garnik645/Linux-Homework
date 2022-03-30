@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <random>
-#include <cassert>
 
 #include <sys/wait.h>
 #include <unistd.h>
@@ -51,14 +50,20 @@ void init_rand(std::vector<int> &buff) {
 // get resulting total sum
 int get_total(const std::vector<int> &pipes) {
     // wait for children
-    waitpid(-1, nullptr, 0);
+    int out = waitpid(-1, nullptr, 0);
+    if (out == -1) {
+        throw std::runtime_error("waitpid failure");
+    }
 
     int total = 0;
     // for every child get resulting subtotal sum
     // from pipes and add to total
     for (int pipe: pipes) {
         int sub_total;
-        read(pipe, &sub_total, sizeof(int));
+        auto rdout = read(pipe, &sub_total, sizeof(int));
+        if(rdout == -1) {
+            throw std::runtime_error("read failure");
+        }
         total += sub_total;
     }
     return total;
@@ -70,12 +75,18 @@ int get_total(const std::vector<int> &pipes) {
 void child(const std::vector<int> &buff, int read_fd, int write_fd) {
     int sum = 0;
     int range[2];
-    read(read_fd, range, sizeof(int) * 2);
+    auto rdout = read(read_fd, range, sizeof(int) * 2);
+    if(rdout == -1) {
+        throw std::runtime_error("read failure");
+    }
     for (int i = range[0]; i < range[1]; ++i) {
         sum += buff[i];
     }
     std::cout << "Sub-Total : " << sum << std::endl;
-    write(write_fd, &sum, sizeof(int));
+    auto wrout = write(write_fd, &sum, sizeof(int));
+    if(wrout == -1) {
+        throw std::runtime_error("write failure");
+    }
 }
 
 int main(int argc, char **argv) {
@@ -108,7 +119,10 @@ int main(int argc, char **argv) {
         int range[2];
         range[0] = i * slice;
         range[1] = (i + 1) * slice;
-        write(to_child_fd[1], range, sizeof(int) * 2);
+        auto wrout = write(to_child_fd[1], range, sizeof(int) * 2);
+        if(wrout == -1) {
+            throw std::runtime_error("write failure");
+        }
 
         // cloning the parent process
         int child_pid = fork();
