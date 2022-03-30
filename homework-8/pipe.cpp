@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
         // cloning the parent process
         int child_pid = fork();
         if (child_pid == -1) {
-            throw std::runtime_error("error while using forking");
+            throw std::runtime_error("error while using fork");
         }
 
         // if child process
