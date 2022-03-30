@@ -50,10 +50,7 @@ void init_rand(std::vector<int> &buff) {
 // get resulting total sum
 int get_total(const std::vector<int> &pipes) {
     // wait for children
-    int out = waitpid(-1, nullptr, 0);
-    if (out == -1) {
-        throw std::runtime_error("waitpid failure");
-    }
+    while (wait(nullptr) > 0);
 
     int total = 0;
     // for every child get resulting subtotal sum
