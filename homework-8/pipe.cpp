@@ -61,7 +61,7 @@ int get_total(const std::vector<int> &pipes) {
     for (int pipe: pipes) {
         int sub_total;
         auto rdout = read(pipe, &sub_total, sizeof(int));
-        if(rdout == -1) {
+        if (rdout == -1) {
             throw std::runtime_error("read failure");
         }
         total += sub_total;
@@ -76,7 +76,7 @@ void child(const std::vector<int> &buff, int read_fd, int write_fd) {
     int sum = 0;
     int range[2];
     auto rdout = read(read_fd, range, sizeof(int) * 2);
-    if(rdout == -1) {
+    if (rdout == -1) {
         throw std::runtime_error("read failure");
     }
     for (int i = range[0]; i < range[1]; ++i) {
@@ -84,7 +84,7 @@ void child(const std::vector<int> &buff, int read_fd, int write_fd) {
     }
     std::cout << "Sub-Total : " << sum << std::endl;
     auto wrout = write(write_fd, &sum, sizeof(int));
-    if(wrout == -1) {
+    if (wrout == -1) {
         throw std::runtime_error("write failure");
     }
 }
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
         range[0] = i * slice;
         range[1] = (i + 1) * slice;
         auto wrout = write(to_child_fd[1], range, sizeof(int) * 2);
-        if(wrout == -1) {
+        if (wrout == -1) {
             throw std::runtime_error("write failure");
         }
 
