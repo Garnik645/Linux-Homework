@@ -1,0 +1,1 @@
+add_library(buffer_lib buffer.cpp)
