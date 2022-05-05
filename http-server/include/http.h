@@ -7,54 +7,35 @@
 
 #include "error_handler.h"
 
-namespace http {
-    class Request {
-    };
+namespace http
+{
+class Request
+{
+};
 
-    class Response {
-    };
+class Response
+{
+};
 
-    class Server {
-    private:
-        uint16_t port;
-        int numberOfThreads;
+class Server
+{
+private:
+  uint16_t port;
+  int numberOfThreads;
 
-    public:
-        explicit HttpServer(uint16_t
-        _port = 80,
-        int _numberOfThreads = 16
-        )
-        :
+public:
+  explicit Server(uint16_t _port = 80, int _numberOfThreads = 16)
+          : port(_port), numberOfThreads(_numberOfThreads)
+  {}
 
-        port (_port), numberOfThreads(_numberOfThreads) {}
+  [[noreturn]] void run() const;
 
-        void run() const {
-            int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-            error_handler(serverSocket, -1, "Couldn't create an endpoint for communication!");
+  uint16_t getPort() const
+  { return port; }
 
-            sockaddr_in address{};
-            bzero(&address, sizeof(address));
-            address.sin_family = AF_INET;
-            address.sin_port = htons(port);
-            address.sin_addr.s_addr = htonl(INADDR_ANY);
-            int binding = bind(serverSocket, (const struct sockaddr *) &address, sizeof(address));
-            error_handler(binding, -1, "Couldn't bind a name to a socket!");
-
-            int listening = listen(serverSocket, numberOfThreads);
-            error_handler(listening, -1, "Couldn't listen for connections!");
-
-            while (true) {
-                sockaddr clientAddress{};
-                socklen_t clientAddressLen = 0;
-                int clientSocket = accept(serverSocket, &clientAddress, &clientAddressLen);
-                error_handler(clientSocket, -1, "Couldn't accept a connection!");
-            }
-        }
-
-        uint16_t getPort() const { return port; }
-
-        int getNumberOfThreads() const { return numberOfThreads; }
-    };
+  int getNumberOfThreads() const
+  { return numberOfThreads; }
+};
 }
 
 
