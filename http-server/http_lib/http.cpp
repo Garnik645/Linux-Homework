@@ -7,6 +7,12 @@ void http::Server::handle(const T &returnValue, const T &errorValue, const std::
   }
 }
 
+void http::Server::answer(void *data) {
+  auto translationUnit = reinterpret_cast<Translator *>(data);
+  auto clientSocket = translationUnit->clientSocket;
+
+}
+
 [[noreturn]] void http::Server::run() const {
   int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
   handle(serverSocket, -1, "Couldn't create an endpoint for communication!");
@@ -22,10 +28,16 @@ void http::Server::handle(const T &returnValue, const T &errorValue, const std::
   int listening = listen(serverSocket, numberOfThreads);
   handle(listening, -1, "Couldn't listen for connections!");
 
+  auto *scheduler = new parallel_scheduler(numberOfThreads);
+
   while (true) {
     sockaddr clientAddress{};
     socklen_t clientAddressLen = 0;
     int clientSocket = accept4(serverSocket, &clientAddress, &clientAddressLen, SOCK_CLOEXEC);
     handle(clientSocket, -1, "Couldn't accept a connection!");
+
+    auto translationUnit = new Translator;
+    translationUnit->clientSocket = clientSocket;
+    scheduler->run(answer, reinterpret_cast<void *>(translationUnit));
   }
 }

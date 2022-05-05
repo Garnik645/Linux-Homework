@@ -10,19 +10,30 @@
 #include <netdb.h>
 #include <string>
 #include <sys/socket.h>
+#include "../scheduler_lib/scheduler_lib.h"
 
 namespace http {
-class Request {};
+class Request {
 
-class Response {};
+};
+
+class Response {
+
+};
 
 class Server {
 private:
+  struct Translator {
+    int clientSocket;
+  };
+
   uint16_t port;
   int numberOfThreads;
 
   template<typename T>
-  static void handle(const T &returnValue, const T &errorValue, const std::string &errorMessage);
+  static void handle(const T &, const T &, const std::string &);
+
+  static void answer(void *);
 
 public:
   explicit Server(uint16_t _port = 80, int _numberOfThreads = 16)
