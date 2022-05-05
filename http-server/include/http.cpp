@@ -1,8 +1,6 @@
 #include "http.h"
 
-namespace http
-{
-[[noreturn]] void Server::run() const
+[[noreturn]] void http::Server::run() const
 {
   int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
   error_handler(serverSocket, -1, "Couldn't create an endpoint for communication!");
@@ -25,5 +23,4 @@ namespace http
     int clientSocket = accept(serverSocket, &clientAddress, &clientAddressLen);
     error_handler(clientSocket, -1, "Couldn't accept a connection!");
   }
-}
 }
