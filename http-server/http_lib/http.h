@@ -5,10 +5,11 @@
 #define HTTP_SERVER_HTTP_H
 
 #include <cstring>
+#include <exception>
+#include <iostream>
 #include <netdb.h>
+#include <string>
 #include <sys/socket.h>
-
-#include "error_handler.h"
 
 namespace http {
 class Request {};
@@ -19,6 +20,9 @@ class Server {
 private:
   uint16_t port;
   int numberOfThreads;
+
+  template<typename T>
+  static void handle(const T &returnValue, const T &errorValue, const std::string &errorMessage);
 
 public:
   explicit Server(uint16_t _port = 80, int _numberOfThreads = 16)

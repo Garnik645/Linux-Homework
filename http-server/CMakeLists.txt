@@ -1,12 +1,24 @@
 cmake_minimum_required(VERSION 3.0)
+
+set(CMAKE_CXX_CLANG_TIDY
+        clang-tidy;
+        -format-style=llvm;)
+
 project(http_server)
 
-set(CMAKE_CXX_STANDARD 17)
+add_executable("${PROJECT_NAME}" source.cpp)
 
-include_directories(include)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
 
-add_executable(http_server
-        include/http.cpp
-        include/http.h
-        include/error_handler.h
-        source.cpp)
+find_package(Threads REQUIRED)
+
+target_link_libraries("${PROJECT_NAME}" PRIVATE Threads::Threads)
+
+add_subdirectory(http_lib)
+
+target_link_libraries("${PROJECT_NAME}" PUBLIC http_lib)
+
+target_include_directories("${PROJECT_NAME}" PUBLIC
+        "${PROJECT_BINARY_DIR}"
+        "${PROJECT_SOURCE_DIR}/http_lib"
+        )
