@@ -7,10 +7,25 @@ void http::Server::handle(const T &returnValue, const T &errorValue, const std::
   }
 }
 
+[[nodiscard]] http::Request http::Server::getRequest(int clientSocket) {
+
+}
+
+void http::Server::sendResponse(int, const http::Response &) {
+
+}
+
 void http::Server::answer(void *data) {
   auto translationUnit = reinterpret_cast<Translator *>(data);
-  auto clientSocket = translationUnit->clientSocket;
-
+  http::Request clientRequest = getRequest(translationUnit->clientSocket);
+  std::pair<std::string, std::string> requestType = std::make_pair(clientRequest.method, clientRequest.path);
+  auto finding = translationUnit->functionality->find(requestType);
+  if (finding == translationUnit->functionality->end()) {
+    // Generate error 404 HTTP Response
+  }
+  auto clientService = finding->second;
+  http::Response clientResponse = clientService->doService(clientRequest);
+  sendResponse(translationUnit->clientSocket, clientResponse);
 }
 
 [[noreturn]] void http::Server::run() const {
@@ -38,6 +53,7 @@ void http::Server::answer(void *data) {
 
     auto translationUnit = new Translator;
     translationUnit->clientSocket = clientSocket;
+    translationUnit->functionality = &functionality;
     scheduler->run(answer, reinterpret_cast<void *>(translationUnit));
   }
 }

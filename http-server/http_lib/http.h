@@ -14,7 +14,8 @@
 #include "../scheduler_lib/scheduler_lib.h"
 
 namespace http {
-class Request {
+
+struct Request {
   std::map<std::string, std::string> header;
   std::string method;
   std::string path;
@@ -22,7 +23,7 @@ class Request {
   std::string body;
 };
 
-class Response {
+struct Response {
   std::map<std::string, std::string> header;
   std::string statusNumber;
   std::string statusInfo;
@@ -30,17 +31,26 @@ class Response {
   std::string body;
 };
 
+struct Service {
+  virtual Response doService(const Request &) = 0;
+};
+
 class Server {
 private:
   struct Translator {
     int clientSocket;
+    const std::map<std::pair<std::string, std::string>, Service *> *functionality;
   };
 
+  std::map<std::pair<std::string, std::string>, Service *> functionality;
   uint16_t port;
   int numberOfThreads;
 
   template<typename T>
   static void handle(const T &, const T &, const std::string &);
+
+  [[nodiscard]] static Request getRequest(int);
+  [[nodiscard]] static void sendResponse(int, const Response&);
 
   static void answer(void *);
 
@@ -49,6 +59,10 @@ public:
       : port(_port), numberOfThreads(_numberOfThreads) {}
 
   [[noreturn]] void run() const;
+
+  void addFunctionality(const std::pair<std::string, std::string> &key, http::Service *value) {
+    functionality[key] = value;
+  }
 
   [[nodiscard]] uint16_t getPort() const { return port; }
 
