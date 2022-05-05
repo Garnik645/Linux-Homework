@@ -1,5 +1,5 @@
-#ifndef A_OUT_ERROR_HANDLER_H
-#define A_OUT_ERROR_HANDLER_H
+#ifndef HTTP_SERVER_ERROR_HANDLER_H
+#define HTTP_SERVER_ERROR_HANDLER_H
 
 #include <iostream>
 #include <exception>
@@ -13,4 +13,4 @@ void error_handler(const T &returnValue, const T &errorValue, const std::string 
     }
 }
 
-#endif //A_OUT_ERROR_HANDLER_H
+#endif //HTTP_SERVER_ERROR_HANDLER_H
