@@ -50,7 +50,7 @@ private:
   static void handle(const T &, const T &, const std::string &);
 
   [[nodiscard]] static Request getRequest(int);
-  [[nodiscard]] static void sendResponse(int, const Response&);
+  static void sendResponse(int, const Response&);
 
   static void answer(void *);
 
