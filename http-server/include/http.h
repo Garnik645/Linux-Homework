@@ -30,10 +30,10 @@ public:
 
   [[noreturn]] void run() const;
 
-  uint16_t getPort() const
+  [[nodiscard]] uint16_t getPort() const
   { return port; }
 
-  int getNumberOfThreads() const
+  [[nodiscard]] int getNumberOfThreads() const
   { return numberOfThreads; }
 };
 }
