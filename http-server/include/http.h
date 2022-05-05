@@ -1,3 +1,6 @@
+// HTTP Server supports protocol version HTTP/1.0 & HTTP/1.1
+// Does not support HTTP/0.9 & HTTP/2.0
+
 #ifndef HTTP_SERVER_HTTP_H
 #define HTTP_SERVER_HTTP_H
 
@@ -37,6 +40,5 @@ public:
   { return numberOfThreads; }
 };
 }
-
 
 #endif //HTTP_SERVER_HTTP_H
