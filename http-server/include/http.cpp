@@ -6,7 +6,7 @@
   error_handler(serverSocket, -1, "Couldn't create an endpoint for communication!");
 
   sockaddr_in address{};
-  bzero(&address, sizeof(address));
+  memset(&address, 0, sizeof(address));
   address.sin_family = AF_INET;
   address.sin_port = htons(port);
   address.sin_addr.s_addr = htonl(INADDR_ANY);
