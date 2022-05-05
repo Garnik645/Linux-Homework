@@ -16,7 +16,7 @@ private:
   static void *consumer(void *);
 
 public:
-  parallel_scheduler(size_t);
+  explicit parallel_scheduler(size_t);
   ~parallel_scheduler();
   void run(const std::function<void(void *)> &, void *);
 };
