@@ -17,7 +17,10 @@ void http::Server::sendResponse(int, const http::Response &) {
 
 void http::Server::answer(void *data) {
   auto translationUnit = reinterpret_cast<Translator *>(data);
+
   http::Request clientRequest = getRequest(translationUnit->clientSocket);
+
+  // combine response generation into one file
   std::pair<std::string, std::string> requestType = std::make_pair(clientRequest.method, clientRequest.path);
   auto finding = translationUnit->functionality->find(requestType);
   if (finding == translationUnit->functionality->end()) {
@@ -25,7 +28,9 @@ void http::Server::answer(void *data) {
   }
   auto clientService = finding->second;
   http::Response clientResponse = clientService->doService(clientRequest);
+
   sendResponse(translationUnit->clientSocket, clientResponse);
+  delete translationUnit;
 }
 
 [[noreturn]] void http::Server::run() const {
@@ -53,7 +58,7 @@ void http::Server::answer(void *data) {
 
     auto translationUnit = new Translator;
     translationUnit->clientSocket = clientSocket;
-    translationUnit->functionality = &functionality;
+    translationUnit->functionality = functionality.get();
     scheduler->run(answer, reinterpret_cast<void *>(translationUnit));
   }
 }

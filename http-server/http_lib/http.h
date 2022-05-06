@@ -8,6 +8,7 @@
 #include <map>
 #include <exception>
 #include <utility>
+#include <memory>
 #include <iostream>
 #include <netdb.h>
 #include <string>
@@ -43,7 +44,7 @@ private:
     const std::map<std::pair<std::string, std::string>, Service *> *functionality;
   };
 
-  std::map<std::pair<std::string, std::string>, Service *> functionality;
+  std::unique_ptr<std::map<std::pair<std::string, std::string>, Service *>> functionality;
   uint16_t port;
   int numberOfThreads;
 
@@ -57,12 +58,15 @@ private:
 
 public:
   explicit Server(uint16_t _port = 80, int _numberOfThreads = 16)
-      : port(_port), numberOfThreads(_numberOfThreads) {}
+      : port(_port)
+      , numberOfThreads(_numberOfThreads)
+      , functionality(std::make_unique<std::map<std::pair<std::string, std::string>, Service *>>())
+      {}
 
   [[noreturn]] void run() const;
 
   void addFunctionality(const std::string &method, const std::string &path, http::Service *value) {
-    functionality[std::make_pair(method, path)] = value;
+    (*functionality)[std::make_pair(method, path)] = value;
   }
 
   [[nodiscard]] uint16_t getPort() const { return port; }
