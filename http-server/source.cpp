@@ -9,7 +9,7 @@ struct StaticFile : http::Service {
   http::Response doService(const http::Request &request) override {
     http::Response response;
     response.version = "HTTP/1.0";
-    response.header["Content-Length"] = std::to_string(fileContent.size());
+    response.headers["Content-Length"] = std::to_string(fileContent.size());
     response.body = fileContent;
     response.statusNumber = std::to_string(200);
     response.statusInfo = "OK";

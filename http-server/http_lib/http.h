@@ -17,7 +17,7 @@
 namespace http {
 
 struct Request {
-  std::map<std::string, std::string> header;
+  std::map<std::string, std::string> headers;
   std::string method;
   std::string path;
   std::string version;
@@ -25,7 +25,7 @@ struct Request {
 };
 
 struct Response {
-  std::map<std::string, std::string> header;
+  std::map<std::string, std::string> headers;
   std::string statusNumber;
   std::string statusInfo;
   std::string version;
