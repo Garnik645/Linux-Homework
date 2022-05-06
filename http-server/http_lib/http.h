@@ -7,6 +7,7 @@
 #include <cstring>
 #include <map>
 #include <exception>
+#include <utility>
 #include <iostream>
 #include <netdb.h>
 #include <string>
@@ -60,8 +61,8 @@ public:
 
   [[noreturn]] void run() const;
 
-  void addFunctionality(const std::pair<std::string, std::string> &key, http::Service *value) {
-    functionality[key] = value;
+  void addFunctionality(const std::string &method, const std::string &path, http::Service *value) {
+    functionality[std::make_pair(method, path)] = value;
   }
 
   [[nodiscard]] uint16_t getPort() const { return port; }
