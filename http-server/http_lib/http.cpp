@@ -42,26 +42,30 @@ http::Text http::parse(const std::string &str) {
   while (!emptyLineReached) {
     ssize_t reading = recv(clientSocket, buff, BUFFER_SIZE, 0);
     handle(reading, static_cast<ssize_t>(-1), "Couldn't receive a message from a socket!");
+    // TODO normal handle
+    handle(reading, static_cast<ssize_t>(0), "Client Disconnected!");
+
     for (size_t i = 0; i < reading; ++i) {
       if (!emptyLineReached && !head.empty() && head.back() == '\n' && buff[i] == '\n') {
         emptyLineReached = true;
         continue;
       }
       if (!emptyLineReached) {
-        head += buff[i];
+        // ignore carriage return
+        if (buff[i] != 13) {
+          head += buff[i];
+        }
       } else {
         body += buff[i];
       }
     }
   }
-  // TODO remove this line
-  std::cout << "Empty line reached" << std::endl;
   // TODO generate http request from text
   Text headText = parse(head);
   request.method = headText[0][0];
   request.path = headText[0][1];
   request.version = headText[0][2];
-  for (size_t i = 1; i < headText.size(); ++i) {
+  for (size_t i = 1; i < headText.size() - 1; ++i) {
     std::string key = headText[i][0];
     key.pop_back();
     std::string value = headText[i][1];
@@ -84,6 +88,7 @@ http::Text http::parse(const std::string &str) {
 }
 
 void http::Server::sendResponse(int clientSocket, const http::Response &response) {
+  std::cout << "Sending" << std::endl;
   std::string responseString;
   responseString += response.version + ' ';
   responseString += response.statusNumber + ' ';
@@ -94,28 +99,34 @@ void http::Server::sendResponse(int clientSocket, const http::Response &response
   responseString += '\n' + response.body;
   ssize_t sending = send(clientSocket, responseString.c_str(), responseString.size(), 0);
   handle(sending, static_cast<ssize_t>(-1), "Couldn't send a message on a socket!");
+  std::cout << "Send " << sending << " bytes" << std::endl;
 }
 
 void http::Server::answer(void *data) {
   auto translationUnit = reinterpret_cast<Translator *>(data);
 
-  http::Request clientRequest = getRequest(translationUnit->clientSocket);
+  while (true) {
+    http::Request clientRequest = getRequest(translationUnit->clientSocket);
 
-  // TODO combine response generation into one file
-  std::pair<std::string, std::string> requestType = std::make_pair(clientRequest.method, clientRequest.path);
-  auto finding = translationUnit->functionality->find(requestType);
-  if (finding == translationUnit->functionality->end()) {
-    // TODO generate error 404 HTTP Response
-    http::Response resp;
-    resp.version = "HTTP/1.0";
-    resp.statusNumber = "404";
-    resp.statusInfo = "Not Found";
-    sendResponse(translationUnit->clientSocket, resp);
+    // TODO combine response generation into one file
+    std::pair<std::string, std::string> requestType = std::make_pair(clientRequest.method, clientRequest.path);
+    auto finding = translationUnit->functionality->find(requestType);
+    if (finding == translationUnit->functionality->end()) {
+      // TODO generate error 404 HTTP Response
+      http::Response resp;
+      resp.version = "HTTP/1.0";
+      resp.statusNumber = "404";
+      resp.statusInfo = "Not Found";
+      sendResponse(translationUnit->clientSocket, resp);
+      std::cout << "ERROR 404" << std::endl;
+      continue;
+    }
+    auto clientService = finding->second;
+    http::Response clientResponse = clientService->doService(clientRequest);
+
+    sendResponse(translationUnit->clientSocket, clientResponse);
   }
-  auto clientService = finding->second;
-  http::Response clientResponse = clientService->doService(clientRequest);
-
-  sendResponse(translationUnit->clientSocket, clientResponse);
+  close(translationUnit->clientSocket);
   delete translationUnit;
 }
 
@@ -134,12 +145,13 @@ void http::Server::answer(void *data) {
   int listening = listen(serverSocket, numberOfThreads);
   handle(listening, -1, "Couldn't listen for connections!");
 
-  auto *scheduler = new parallel_scheduler(numberOfThreads);
+  auto scheduler = std::make_unique<parallel_scheduler>(numberOfThreads);
 
   while (true) {
     sockaddr_in clientAddress{};
     socklen_t clientAddressLen = sizeof(clientAddress);
-    int clientSocket = accept4(serverSocket, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddressLen, SOCK_CLOEXEC);
+    int clientSocket =
+        accept4(serverSocket, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddressLen, SOCK_CLOEXEC);
     handle(clientSocket, -1, "Couldn't accept a connection!");
 
     // TODO log print client info

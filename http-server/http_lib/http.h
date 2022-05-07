@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <string>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 #include "../scheduler_lib/scheduler_lib.h"
 
