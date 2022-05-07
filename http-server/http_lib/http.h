@@ -9,13 +9,20 @@
 #include <exception>
 #include <utility>
 #include <memory>
+#include <sstream>
 #include <iostream>
+#include <vector>
 #include <netdb.h>
 #include <string>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include "../scheduler_lib/scheduler_lib.h"
 
+#define BUFFER_SIZE 10002
+
 namespace http {
+typedef std::vector<std::vector<std::string>> Text;
+typedef std::vector<std::string> Line;
 
 struct Request {
   std::map<std::string, std::string> headers;
@@ -37,6 +44,11 @@ struct Service {
   virtual Response doService(const Request &) = 0;
 };
 
+template<typename T>
+void handle(const T &, const T &, const std::string &);
+
+Text parse(const std::string &);
+
 class Server {
 private:
   struct Translator {
@@ -48,20 +60,15 @@ private:
   uint16_t port;
   int numberOfThreads;
 
-  template<typename T>
-  static void handle(const T &, const T &, const std::string &);
-
   [[nodiscard]] static Request getRequest(int);
-  static void sendResponse(int, const Response&);
+  static void sendResponse(int, const Response &);
 
   static void answer(void *);
 
 public:
-  explicit Server(uint16_t _port = 80, int _numberOfThreads = 16)
-      : port(_port)
-      , numberOfThreads(_numberOfThreads)
-      , functionality(std::make_unique<std::map<std::pair<std::string, std::string>, Service *>>())
-      {}
+  explicit Server(uint16_t _port = 8080, int _numberOfThreads = 16)
+      : port(_port), numberOfThreads(_numberOfThreads),
+        functionality(std::make_unique<std::map<std::pair<std::string, std::string>, Service *>>()) {}
 
   [[noreturn]] void run() const;
 

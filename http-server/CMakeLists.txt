@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
 
-set(CMAKE_CXX_CLANG_TIDY
-        clang-tidy;
-        -format-style=llvm;)
-
 project(http_server)
 
 add_executable("${PROJECT_NAME}" source.cpp)
