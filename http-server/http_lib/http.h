@@ -73,7 +73,7 @@ public:
 
   [[noreturn]] void run() const;
 
-  void addFunctionality(const std::string &method, const std::string &path, http::Service *value) {
+  void init(const std::string &method, const std::string &path, http::Service *value) {
     (*functionality)[std::make_pair(method, path)] = value;
   }
 

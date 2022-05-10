@@ -20,6 +20,6 @@ struct StaticFile : http::Service {
 int main(int argc, char *argv[]) {
   http::Server server;
   StaticFile file("Hello, World!\n");
-  server.addFunctionality("GET", "/hello", &file);
+  server.init("GET", "/hello", &file);
   server.run();
 }
