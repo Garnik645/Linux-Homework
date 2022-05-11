@@ -4,7 +4,7 @@
 
 template<typename T>
 void http::handle(const T &returnValue, const T &errorValue, const std::string &errorMessage) {
-  if (returnValue == errorValue) {
+  if (returnValue==errorValue) {
     throw std::runtime_error(errorMessage + " Error : " + std::to_string(errno));
   }
 }
@@ -14,7 +14,7 @@ http::Text http::parse(const std::string &str) {
   text.push_back(http::Line());
   bool newString = true;
   for (char i : str) {
-    if (std::isspace(i) == 0) {
+    if (std::isspace(i)==0) {
       if (newString) {
         newString = false;
         text.back().push_back(std::string());
@@ -22,7 +22,7 @@ http::Text http::parse(const std::string &str) {
       text.back().back().push_back(i);
     } else {
       newString = true;
-      if (i == '\n') {
+      if (i=='\n') {
         text.push_back(http::Line());
       }
     }
@@ -46,13 +46,13 @@ http::Text http::parse(const std::string &str) {
     handle(reading, static_cast<ssize_t>(0), "Client Disconnected!");
 
     for (size_t i = 0; i < reading; ++i) {
-      if (!emptyLineReached && !head.empty() && head.back() == '\n' && buff[i] == '\n') {
+      if (!emptyLineReached && !head.empty() && head.back()=='\n' && buff[i]=='\n') {
         emptyLineReached = true;
         continue;
       }
       if (!emptyLineReached) {
         // ignore carriage return
-        if (buff[i] != 13) {
+        if (buff[i]!=13) {
           head += buff[i];
         }
       } else {
@@ -69,7 +69,7 @@ http::Text http::parse(const std::string &str) {
     std::string key = headText[i][0];
     key.pop_back();
     std::string value = headText[i][1];
-    if (key == "Content-Length") {
+    if (key=="Content-Length") {
       bodySize = std::stoi(value);
     }
     request.headers[std::move(key)] = std::move(value);
@@ -85,6 +85,18 @@ http::Text http::parse(const std::string &str) {
   }
   request.body = body;
   return request;
+}
+
+http::Response http::Server::generateResponse(const std::map<std::pair<std::string, std::string>,
+    Service *> *functionality, const http::Request &clientRequest) {
+  // TODO combine response generation into one file
+  std::pair<std::string, std::string> requestType = std::make_pair(clientRequest.method, clientRequest.path);
+  auto finding = functionality->find(requestType);
+  if (finding==functionality->end()) {
+    // TODO define Error 404 (Not Found)
+  }
+  auto clientService = finding->second;
+  http::Response clientResponse = clientService->doService(clientRequest);
 }
 
 void http::Server::sendResponse(int clientSocket, const http::Response &response) {
@@ -104,33 +116,22 @@ void http::Server::sendResponse(int clientSocket, const http::Response &response
 
 void http::Server::answer(void *data) {
   auto translationUnit = reinterpret_cast<Translator *>(data);
-
-  while (true) {
-    http::Request clientRequest = getRequest(translationUnit->clientSocket);
-
-    // TODO combine response generation into one file
-    std::pair<std::string, std::string> requestType = std::make_pair(clientRequest.method, clientRequest.path);
-    auto finding = translationUnit->functionality->find(requestType);
-    if (finding == translationUnit->functionality->end()) {
-      // TODO generate error 404 HTTP Response
-      http::Response resp;
-      resp.version = "HTTP/1.0";
-      resp.statusNumber = "404";
-      resp.statusInfo = "Not Found";
-      sendResponse(translationUnit->clientSocket, resp);
-      std::cout << "ERROR 404" << std::endl;
-      continue;
+  try {
+    while (true) {
+      http::Request clientRequest = getRequest(translationUnit->clientSocket);
+      http::Response clientResponse = generateResponse(translationUnit->functionality, clientRequest);
+      sendResponse(translationUnit->clientSocket, clientResponse);
     }
-    auto clientService = finding->second;
-    http::Response clientResponse = clientService->doService(clientRequest);
-
-    sendResponse(translationUnit->clientSocket, clientResponse);
+  } catch (const std::invalid_argument &ex) {
+    // TODO define Error 400 (Bad Request)
+  } catch (const std::exception &ex) {
+    // TODO define Error 500 (Internal Server Error)
+    delete translationUnit;
+    close(translationUnit->clientSocket);
   }
-  close(translationUnit->clientSocket);
-  delete translationUnit;
 }
 
-int http::Server::getServerSocket(uint16_t port, int numberOfThreads) {
+int http::Server::bindServerSocket(uint16_t port, int numberOfThreads) {
   int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
   handle(serverSocket, -1, "Couldn't create an endpoint for communication!");
 
@@ -147,7 +148,7 @@ int http::Server::getServerSocket(uint16_t port, int numberOfThreads) {
   return serverSocket;
 }
 
-int http::Server::getClientSocket(int serverSocket) {
+int http::Server::acceptClientSocket(int serverSocket) {
   sockaddr_in clientAddress{};
   socklen_t clientAddressLen = sizeof(clientAddress);
   int clientSocket =
@@ -161,12 +162,18 @@ int http::Server::getClientSocket(int serverSocket) {
 }
 
 [[noreturn]] void http::Server::run(uint16_t port, int numberOfThreads) const {
-  int serverSocket = getServerSocket(port, numberOfThreads);
-  auto scheduler = std::make_unique<parallel_scheduler>(numberOfThreads);
-  while (true) {
-    int clientSocket = getClientSocket(serverSocket);
-    auto translationUnit = new Translator{clientSocket, functionality.get()};
-    scheduler->run(answer, reinterpret_cast<void *>(translationUnit));
+  int serverSocket = bindServerSocket(port, numberOfThreads);
+  auto scheduler = new parallel_scheduler(numberOfThreads);
+  try {
+    while (true) {
+      int clientSocket = acceptClientSocket(serverSocket);
+      auto translationUnit = new Translator{clientSocket, functionality.get()};
+      scheduler->run(answer, reinterpret_cast<void *>(translationUnit));
+    }
+  } catch (const std::exception &ex) {
+    delete scheduler;
+    close(serverSocket);
+    throw ex;
   }
 }
 /*

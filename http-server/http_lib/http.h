@@ -60,11 +60,12 @@ private:
   std::unique_ptr<std::map<std::pair<std::string, std::string>, Service *>> functionality;
 
   [[nodiscard]] static Request getRequest(int);
+  [[nodiscard]] static Response generateResponse(const std::map<std::pair<std::string, std::string>, Service *> *, const Request &);
   static void sendResponse(int, const Response &);
   static void answer(void *);
 
-  [[nodiscard]] static int getClientSocket(int);
-  [[nodiscard]] static int getServerSocket(uint16_t, int);
+  [[nodiscard]] static int bindServerSocket(uint16_t, int);
+  [[nodiscard]] static int acceptClientSocket(int);
 
 public:
   Server() : functionality(std::make_unique<std::map<std::pair<std::string, std::string>, Service *>>()) {}
@@ -73,7 +74,7 @@ public:
     (*functionality)[std::make_pair(method, path)] = value;
   }
 
-  [[noreturn]] void run(uint16_t, int) const;
+  [[noreturn]] void run(uint16_t port = 8080, int numberOfThreads = 16) const;
 };
 } // namespace http
 
