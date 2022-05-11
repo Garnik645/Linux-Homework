@@ -58,28 +58,22 @@ private:
   };
 
   std::unique_ptr<std::map<std::pair<std::string, std::string>, Service *>> functionality;
-  uint16_t port;
-  int numberOfThreads;
 
   [[nodiscard]] static Request getRequest(int);
   static void sendResponse(int, const Response &);
-
   static void answer(void *);
 
-public:
-  explicit Server(uint16_t _port = 8080, int _numberOfThreads = 16)
-      : port(_port), numberOfThreads(_numberOfThreads),
-        functionality(std::make_unique<std::map<std::pair<std::string, std::string>, Service *>>()) {}
+  [[nodiscard]] static int getClientSocket(int);
+  [[nodiscard]] static int getServerSocket(uint16_t, int);
 
-  [[noreturn]] void run() const;
+public:
+  Server() : functionality(std::make_unique<std::map<std::pair<std::string, std::string>, Service *>>()) {}
 
   void init(const std::string &method, const std::string &path, http::Service *value) {
     (*functionality)[std::make_pair(method, path)] = value;
   }
 
-  [[nodiscard]] uint16_t getPort() const { return port; }
-
-  [[nodiscard]] int getNumberOfThreads() const { return numberOfThreads; }
+  [[noreturn]] void run(uint16_t, int) const;
 };
 } // namespace http
 

@@ -130,7 +130,7 @@ void http::Server::answer(void *data) {
   delete translationUnit;
 }
 
-[[noreturn]] void http::Server::run() const {
+int http::Server::getServerSocket(uint16_t port, int numberOfThreads) {
   int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
   handle(serverSocket, -1, "Couldn't create an endpoint for communication!");
 
@@ -144,24 +144,28 @@ void http::Server::answer(void *data) {
 
   int listening = listen(serverSocket, numberOfThreads);
   handle(listening, -1, "Couldn't listen for connections!");
+  return serverSocket;
+}
 
+int http::Server::getClientSocket(int serverSocket) {
+  sockaddr_in clientAddress{};
+  socklen_t clientAddressLen = sizeof(clientAddress);
+  int clientSocket =
+      accept4(serverSocket, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddressLen, SOCK_CLOEXEC);
+  handle(clientSocket, -1, "Couldn't accept a connection!");
+
+  char *clientIP = inet_ntoa(clientAddress.sin_addr);
+  int clientPort = ntohs(clientAddress.sin_port);
+  std::cout << "Got connection from " << clientIP << ':' << clientPort << std::endl;
+  return clientSocket;
+}
+
+[[noreturn]] void http::Server::run(uint16_t port, int numberOfThreads) const {
+  int serverSocket = getServerSocket(port, numberOfThreads);
   auto scheduler = std::make_unique<parallel_scheduler>(numberOfThreads);
-
   while (true) {
-    sockaddr_in clientAddress{};
-    socklen_t clientAddressLen = sizeof(clientAddress);
-    int clientSocket =
-        accept4(serverSocket, reinterpret_cast<sockaddr *>(&clientAddress), &clientAddressLen, SOCK_CLOEXEC);
-    handle(clientSocket, -1, "Couldn't accept a connection!");
-
-    // TODO log print client info
-    char *clientIP = inet_ntoa(clientAddress.sin_addr);
-    int clientPort = ntohs(clientAddress.sin_port);
-    std::cout << "Got connection from " << clientIP << ':' << clientPort << std::endl;
-
-    auto translationUnit = new Translator;
-    translationUnit->clientSocket = clientSocket;
-    translationUnit->functionality = functionality.get();
+    int clientSocket = getClientSocket(serverSocket);
+    auto translationUnit = new Translator{clientSocket, functionality.get()};
     scheduler->run(answer, reinterpret_cast<void *>(translationUnit));
   }
 }
