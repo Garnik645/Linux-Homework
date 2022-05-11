@@ -89,14 +89,14 @@ http::Text http::parse(const std::string &str) {
 
 http::Response http::Server::generateResponse(const std::map<std::pair<std::string, std::string>,
     Service *> *functionality, const http::Request &clientRequest) {
-  // TODO combine response generation into one file
   std::pair<std::string, std::string> requestType = std::make_pair(clientRequest.method, clientRequest.path);
   auto finding = functionality->find(requestType);
   if (finding==functionality->end()) {
-    // TODO define Error 404 (Not Found)
+    throw ERROR_404;
   }
   auto clientService = finding->second;
   http::Response clientResponse = clientService->doService(clientRequest);
+  return clientResponse;
 }
 
 void http::Server::sendResponse(int clientSocket, const http::Response &response) {
@@ -122,13 +122,19 @@ void http::Server::answer(void *data) {
       http::Response clientResponse = generateResponse(translationUnit->functionality, clientRequest);
       sendResponse(translationUnit->clientSocket, clientResponse);
     }
-  } catch (const std::invalid_argument &ex) {
-    // TODO define Error 400 (Bad Request)
+  } catch (const http::Response &ex) {
+    sendResponse(translationUnit->clientSocket, ex);
+    delete translationUnit;
+    close(translationUnit->clientSocket);
   } catch (const std::exception &ex) {
-    // TODO define Error 500 (Internal Server Error)
+    sendResponse(translationUnit->clientSocket, ERROR_500);
     delete translationUnit;
     close(translationUnit->clientSocket);
   }
+}
+
+void http::Server::init(const std::string &method, const std::string &path, http::Service *value) {
+  (*functionality)[std::make_pair(method, path)] = value;
 }
 
 int http::Server::bindServerSocket(uint16_t port, int numberOfThreads) {
@@ -176,6 +182,7 @@ int http::Server::acceptClientSocket(int serverSocket) {
     throw ex;
   }
 }
+
 /*
 ---Examples---
 

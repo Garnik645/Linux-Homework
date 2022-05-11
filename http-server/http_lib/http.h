@@ -31,6 +31,8 @@ struct Request {
   std::string path;
   std::string version;
   std::string body;
+
+  Request() = default;
 };
 
 struct Response {
@@ -39,7 +41,16 @@ struct Response {
   std::string statusInfo;
   std::string version;
   std::string body;
+
+  Response() = default;
+
+  Response(std::string number, std::string info)
+      : statusNumber(std::move(number)), statusInfo(std::move(info)), version("HTTP/1.0") {}
 };
+
+#define ERROR_400 http::Response("400", "Bad Request")
+#define ERROR_404 http::Response("404", "Not Found")
+#define ERROR_500 http::Response("500", "Internal Server Error")
 
 struct Service {
   virtual Response doService(const Request &) = 0;
@@ -60,7 +71,8 @@ private:
   std::unique_ptr<std::map<std::pair<std::string, std::string>, Service *>> functionality;
 
   [[nodiscard]] static Request getRequest(int);
-  [[nodiscard]] static Response generateResponse(const std::map<std::pair<std::string, std::string>, Service *> *, const Request &);
+  [[nodiscard]] static Response generateResponse(const std::map<std::pair<std::string, std::string>, Service *> *,
+                                                 const Request &);
   static void sendResponse(int, const Response &);
   static void answer(void *);
 
@@ -70,9 +82,7 @@ private:
 public:
   Server() : functionality(std::make_unique<std::map<std::pair<std::string, std::string>, Service *>>()) {}
 
-  void init(const std::string &method, const std::string &path, http::Service *value) {
-    (*functionality)[std::make_pair(method, path)] = value;
-  }
+  void init(const std::string &, const std::string &, http::Service *);
 
   [[noreturn]] void run(uint16_t port = 8080, int numberOfThreads = 16) const;
 };
