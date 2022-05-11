@@ -110,6 +110,7 @@ void http::Server::sendResponse(int clientSocket, const http::Response &response
   }
   responseString += '\n' + response.body;
   ssize_t sending = send(clientSocket, responseString.c_str(), responseString.size(), 0);
+  // TODO sending == 0
   handle(sending, static_cast<ssize_t>(-1), "Couldn't send a message on a socket!");
   std::cout << "Send " << sending << " bytes" << std::endl;
 }
@@ -117,19 +118,24 @@ void http::Server::sendResponse(int clientSocket, const http::Response &response
 void http::Server::answer(void *data) {
   auto translationUnit = reinterpret_cast<Translator *>(data);
   try {
-    while (true) {
-      http::Request clientRequest = getRequest(translationUnit->clientSocket);
-      http::Response clientResponse = generateResponse(translationUnit->functionality, clientRequest);
-      sendResponse(translationUnit->clientSocket, clientResponse);
+    try {
+      while (true) {
+        http::Request clientRequest = getRequest(translationUnit->clientSocket);
+        http::Response clientResponse = generateResponse(translationUnit->functionality, clientRequest);
+        sendResponse(translationUnit->clientSocket, clientResponse);
+      }
+    } catch (const http::Response &ex) {
+      sendResponse(translationUnit->clientSocket, ex);
+      delete translationUnit;
+      close(translationUnit->clientSocket);
+    } catch (const std::exception &ex) {
+      sendResponse(translationUnit->clientSocket, ERROR_500);
+      std::cout << ex.what() << std::endl;
+      delete translationUnit;
+      close(translationUnit->clientSocket);
     }
-  } catch (const http::Response &ex) {
-    sendResponse(translationUnit->clientSocket, ex);
-    delete translationUnit;
-    close(translationUnit->clientSocket);
   } catch (const std::exception &ex) {
-    sendResponse(translationUnit->clientSocket, ERROR_500);
-    delete translationUnit;
-    close(translationUnit->clientSocket);
+    std::cout << ex.what();
   }
 }
 
