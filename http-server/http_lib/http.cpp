@@ -1,5 +1,5 @@
 #include "http.h"
-// TODO add normal Log for server
+// TODO add comments
 
 template<typename T>
 void http::handle(const T &returnValue, const T &errorValue, const std::string &errorMessage) {
@@ -85,7 +85,7 @@ void http::Server::getBody(int clientSocket, int bodySize, std::string &body) {
   while (body.size() < bodySize) {
     ssize_t reading = recv(clientSocket, buff, BUFFER_SIZE, 0);
     handle(reading, static_cast<ssize_t>(-1), "Couldn't receive a message from a socket!");
-    handle(reading, static_cast<ssize_t>(0), "Client Disconnected!");
+    handle(reading, static_cast<ssize_t>(0), "Client disconnected!");
     for (size_t i = 0; i < reading && body.size() < bodySize; ++i) {
       body += buff[i];
     }
@@ -179,6 +179,8 @@ int http::Server::bindServerSocket(uint16_t port, int numberOfThreads) {
 
   int listening = listen(serverSocket, numberOfThreads);
   handle(listening, -1, "Couldn't listen for connections!");
+
+  std::cout << "Created server socket with port : " << port << std::endl;
   return serverSocket;
 }
 
