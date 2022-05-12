@@ -57,7 +57,7 @@ struct Service {
 };
 
 template<typename T>
-void handle(const T &, const T &, const std::string &);
+void handle(const T &, const T &, const std::string &, bool = true);
 
 Text parse(const std::string &);
 
@@ -92,3 +92,24 @@ public:
 } // namespace http
 
 #endif // HTTP_SERVER_HTTP_H
+
+/*
+---Examples---
+
+-(Request)-
+GET /my-page.html HTTP/1.0
+User-Agent: NCSA_Mosaic/2.0 (Windows 3.1)
+
+-(Response)-
+HTTP/1.0 200 OK
+Content-Type: text/html
+Content-Length: 137582
+Expires: Thu, 01 Dec 1997 16:00:00 GMT
+Last-Modified: Wed, 1 May 1996 12:45:26 GMT
+Server: Apache 0.84
+
+<HTML>
+A page with an image
+  <IMG SRC="/myimage.gif">
+</HTML>
+ */

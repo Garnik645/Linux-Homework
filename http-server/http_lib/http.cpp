@@ -2,9 +2,13 @@
 // TODO add comments
 
 template<typename T>
-void http::handle(const T &returnValue, const T &errorValue, const std::string &errorMessage) {
+void http::handle(const T &returnValue, const T &errorValue, const std::string &errorMessage, bool throwErrno) {
   if (returnValue==errorValue) {
-    throw std::runtime_error(errorMessage + " Error : " + std::to_string(errno));
+    if (throwErrno) {
+      throw std::runtime_error(errorMessage + " Error : " + std::to_string(errno));
+    } else {
+      throw std::runtime_error(errorMessage);
+    }
   }
 }
 
@@ -35,7 +39,7 @@ void http::Server::getHead(int clientSocket, std::string &head, std::string &bod
   while (!emptyLineReached) {
     ssize_t reading = recv(clientSocket, buff, BUFFER_SIZE, 0);
     handle(reading, static_cast<ssize_t>(-1), "Couldn't receive a message from a socket!");
-    handle(reading, static_cast<ssize_t>(0), "Client Disconnected!");
+    handle(reading, static_cast<ssize_t>(0), "Client Disconnected!", false);
     for (size_t i = 0; i < reading; ++i) {
       if (!emptyLineReached && !head.empty() && head.back()=='\n' && buff[i]=='\n') {
         emptyLineReached = true;
@@ -85,7 +89,7 @@ void http::Server::getBody(int clientSocket, int bodySize, std::string &body) {
   while (body.size() < bodySize) {
     ssize_t reading = recv(clientSocket, buff, BUFFER_SIZE, 0);
     handle(reading, static_cast<ssize_t>(-1), "Couldn't receive a message from a socket!");
-    handle(reading, static_cast<ssize_t>(0), "Client disconnected!");
+    handle(reading, static_cast<ssize_t>(0), "Client disconnected!", false);
     for (size_t i = 0; i < reading && body.size() < bodySize; ++i) {
       body += buff[i];
     }
@@ -121,7 +125,6 @@ http::Response http::Server::generateResponse(const std::map<std::pair<std::stri
 }
 
 void http::Server::sendResponse(int clientSocket, const http::Response &response) {
-  std::cout << "Sending" << std::endl;
   std::string responseString;
   responseString += response.version + ' ';
   responseString += response.statusNumber + ' ';
@@ -132,7 +135,6 @@ void http::Server::sendResponse(int clientSocket, const http::Response &response
   responseString += '\n' + response.body;
   ssize_t sending = send(clientSocket, responseString.c_str(), responseString.size(), 0);
   handle(sending, static_cast<ssize_t>(-1), "Couldn't send a message on a socket!");
-  std::cout << "Send " << sending << " bytes" << std::endl;
 }
 
 void http::Server::answer(void *data) {
@@ -213,24 +215,3 @@ int http::Server::acceptClientSocket(int serverSocket) {
     throw ex;
   }
 }
-
-/*
----Examples---
-
--(Request)-
-GET /my-page.html HTTP/1.0
-User-Agent: NCSA_Mosaic/2.0 (Windows 3.1)
-
--(Response)-
-HTTP/1.0 200 OK
-Content-Type: text/html
-Content-Length: 137582
-Expires: Thu, 01 Dec 1997 16:00:00 GMT
-Last-Modified: Wed, 1 May 1996 12:45:26 GMT
-Server: Apache 0.84
-
-<HTML>
-A page with an image
-  <IMG SRC="/myimage.gif">
-</HTML>
- */
