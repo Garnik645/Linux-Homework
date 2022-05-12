@@ -147,12 +147,12 @@ void http::Server::answer(void *data) {
     } catch (const http::Response &ex) {
       sendResponse(translationUnit->clientSocket, ex);
       int closing = close(translationUnit->clientSocket);
-      handle(closing, -1, "Couldn't close fire descriptor");
+      handle(closing, -1, "Couldn't close file descriptor");
       delete translationUnit;
     } catch (const std::exception &ex) {
       sendResponse(translationUnit->clientSocket, RESPONSE_500);
       int closing = close(translationUnit->clientSocket);
-      handle(closing, -1, "Couldn't close fire descriptor");
+      handle(closing, -1, "Couldn't close file descriptor");
       delete translationUnit;
       std::cout << ex.what() << std::endl;
     }
@@ -209,7 +209,7 @@ int http::Server::acceptClientSocket(int serverSocket) {
   } catch (const std::exception &ex) {
     delete scheduler;
     int closing = close(serverSocket);
-    handle(closing, -1, "Couldn't close fire descriptor");
+    handle(closing, -1, "Couldn't close file descriptor");
     throw ex;
   }
 }
