@@ -62,7 +62,7 @@ void http::Server::getHead(int clientSocket, std::string &head,
   }
 }
 
-int http::Server::parseRequestHead(http::Request &request, std::string &head) {
+int http::Server::parseRequestHead(http::Request &request, const std::string &head) {
   Text headText = parse(head);
   if (headText[0].size() != 3) {
     throw RESPONSE_400;
@@ -229,6 +229,6 @@ int http::Server::acceptClientSocket(int serverSocket) {
     delete scheduler;
     int closing = close(serverSocket);
     handle(closing, -1, "Couldn't close file descriptor");
-    throw ex;
+    throw;
   }
 }

@@ -76,7 +76,7 @@ private:
       functionality;
 
   static void getHead(int, std::string &, std::string &);
-  static int parseRequestHead(http::Request &, std::string &);
+  static int parseRequestHead(http::Request &, const std::string &);
   static void getBody(int, int, std::string &);
   [[nodiscard]] static Request getRequest(int);
   [[nodiscard]] static Response generateResponse(

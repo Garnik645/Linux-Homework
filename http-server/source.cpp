@@ -18,7 +18,7 @@ struct StaticFile : http::Service {
 };
 
 struct Upper : http::Service {
-  http::Response doService(const http::Request &request) final {
+  http::Response doService(const http::Request &request) override {
     http::Response response;
     auto it = request.headers.find("Content-Length");
     if (request.body.empty() || it == request.headers.end()) {
