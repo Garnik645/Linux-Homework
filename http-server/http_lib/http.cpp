@@ -30,21 +30,13 @@ http::Text http::parse(const std::string &str) {
   return text;
 }
 
-[[nodiscard]] http::Request http::Server::getRequest(int clientSocket) {
-  // TODO error handling
-  // TODO read head and read body
-  http::Request request;
-  std::string head;
-  std::string body;
-  int bodySize = 0;
+void http::Server::getHead(int clientSocket, std::string &head, std::string &body) {
   char buff[BUFFER_SIZE];
   bool emptyLineReached = false;
   while (!emptyLineReached) {
     ssize_t reading = recv(clientSocket, buff, BUFFER_SIZE, 0);
     handle(reading, static_cast<ssize_t>(-1), "Couldn't receive a message from a socket!");
-    // TODO normal handle
     handle(reading, static_cast<ssize_t>(0), "Client Disconnected!");
-
     for (size_t i = 0; i < reading; ++i) {
       if (!emptyLineReached && !head.empty() && head.back()=='\n' && buff[i]=='\n') {
         emptyLineReached = true;
@@ -60,13 +52,25 @@ http::Text http::parse(const std::string &str) {
       }
     }
   }
-  // TODO generate http request from text
+}
+
+int http::Server::parseRequestHead(http::Request &request, std::string &head) {
   Text headText = parse(head);
+  if (headText[0].size()!=3) {
+    throw ERROR_400;
+  }
   request.method = headText[0][0];
   request.path = headText[0][1];
   request.version = headText[0][2];
+  int bodySize = 0;
   for (size_t i = 1; i < headText.size() - 1; ++i) {
+    if (headText[i].size()!=2) {
+      throw ERROR_400;
+    }
     std::string key = headText[i][0];
+    if (key.size() <= 1 || key.back()!=':') {
+      throw ERROR_400;
+    }
     key.pop_back();
     std::string value = headText[i][1];
     if (key=="Content-Length") {
@@ -74,21 +78,39 @@ http::Text http::parse(const std::string &str) {
     }
     request.headers[std::move(key)] = std::move(value);
   }
+  return bodySize;
+}
+
+void http::Server::getBody(int clientSocket, int bodySize, std::string &body) {
+  char buff[BUFFER_SIZE];
   while (body.size() < bodySize) {
     ssize_t reading = recv(clientSocket, buff, BUFFER_SIZE, 0);
+    handle(reading, static_cast<ssize_t>(-1), "Couldn't receive a message from a socket!");
+    handle(reading, static_cast<ssize_t>(0), "Client Disconnected!");
     for (size_t i = 0; i < reading && body.size() < bodySize; ++i) {
       body += buff[i];
     }
   }
+  // TODO can be improved
   if (body.size() > bodySize) {
     body = body.substr(0, bodySize);
   }
+}
+
+[[nodiscard]] http::Request http::Server::getRequest(int clientSocket) {
+  http::Request request;
+  std::string head;
+  std::string body;
+  getHead(clientSocket, head, body);
+  int bodySize = parseRequestHead(request, head);
+  getBody(clientSocket, bodySize, body);
   request.body = body;
   return request;
 }
 
 http::Response http::Server::generateResponse(const std::map<std::pair<std::string, std::string>,
-    Service *> *functionality, const http::Request &clientRequest) {
+                                                             Service *> *functionality,
+                                              const http::Request &clientRequest) {
   std::pair<std::string, std::string> requestType = std::make_pair(clientRequest.method, clientRequest.path);
   auto finding = functionality->find(requestType);
   if (finding==functionality->end()) {

@@ -70,6 +70,9 @@ private:
 
   std::unique_ptr<std::map<std::pair<std::string, std::string>, Service *>> functionality;
 
+  static void getHead(int, std::string &, std::string &);
+  static int parseRequestHead(http::Request &, std::string &);
+  static void getBody(int, int, std::string &);
   [[nodiscard]] static Request getRequest(int);
   [[nodiscard]] static Response generateResponse(const std::map<std::pair<std::string, std::string>, Service *> *,
                                                  const Request &);
