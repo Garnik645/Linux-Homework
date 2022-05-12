@@ -19,6 +19,10 @@
 #include <arpa/inet.h>
 #include "../scheduler_lib/scheduler_lib.h"
 
+#define RESPONSE_400 http::Response("400", "Bad Request")
+#define RESPONSE_404 http::Response("404", "Not Found")
+#define RESPONSE_500 http::Response("500", "Internal Server Error")
+
 #define BUFFER_SIZE 10002
 
 namespace http {
@@ -47,10 +51,6 @@ struct Response {
   Response(std::string number, std::string info)
       : statusNumber(std::move(number)), statusInfo(std::move(info)), version("HTTP/1.0") {}
 };
-
-#define ERROR_400 http::Response("400", "Bad Request")
-#define ERROR_404 http::Response("404", "Not Found")
-#define ERROR_500 http::Response("500", "Internal Server Error")
 
 struct Service {
   virtual Response doService(const Request &) = 0;

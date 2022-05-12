@@ -1,6 +1,5 @@
 #include "http.h"
 // TODO add normal Log for server
-// TODO handle client disconnection
 
 template<typename T>
 void http::handle(const T &returnValue, const T &errorValue, const std::string &errorMessage) {
@@ -57,7 +56,7 @@ void http::Server::getHead(int clientSocket, std::string &head, std::string &bod
 int http::Server::parseRequestHead(http::Request &request, std::string &head) {
   Text headText = parse(head);
   if (headText[0].size()!=3) {
-    throw ERROR_400;
+    throw RESPONSE_400;
   }
   request.method = headText[0][0];
   request.path = headText[0][1];
@@ -65,11 +64,11 @@ int http::Server::parseRequestHead(http::Request &request, std::string &head) {
   int bodySize = 0;
   for (size_t i = 1; i < headText.size() - 1; ++i) {
     if (headText[i].size()!=2) {
-      throw ERROR_400;
+      throw RESPONSE_400;
     }
     std::string key = headText[i][0];
     if (key.size() <= 1 || key.back()!=':') {
-      throw ERROR_400;
+      throw RESPONSE_400;
     }
     key.pop_back();
     std::string value = headText[i][1];
@@ -114,7 +113,7 @@ http::Response http::Server::generateResponse(const std::map<std::pair<std::stri
   std::pair<std::string, std::string> requestType = std::make_pair(clientRequest.method, clientRequest.path);
   auto finding = functionality->find(requestType);
   if (finding==functionality->end()) {
-    throw ERROR_404;
+    throw RESPONSE_404;
   }
   auto clientService = finding->second;
   http::Response clientResponse = clientService->doService(clientRequest);
@@ -132,7 +131,6 @@ void http::Server::sendResponse(int clientSocket, const http::Response &response
   }
   responseString += '\n' + response.body;
   ssize_t sending = send(clientSocket, responseString.c_str(), responseString.size(), 0);
-  // TODO sending == 0
   handle(sending, static_cast<ssize_t>(-1), "Couldn't send a message on a socket!");
   std::cout << "Send " << sending << " bytes" << std::endl;
 }
@@ -148,13 +146,15 @@ void http::Server::answer(void *data) {
       }
     } catch (const http::Response &ex) {
       sendResponse(translationUnit->clientSocket, ex);
+      int closing = close(translationUnit->clientSocket);
+      handle(closing, -1, "Couldn't close fire descriptor");
       delete translationUnit;
-      close(translationUnit->clientSocket);
     } catch (const std::exception &ex) {
-      sendResponse(translationUnit->clientSocket, ERROR_500);
-      std::cout << ex.what() << std::endl;
+      sendResponse(translationUnit->clientSocket, RESPONSE_500);
+      int closing = close(translationUnit->clientSocket);
+      handle(closing, -1, "Couldn't close fire descriptor");
       delete translationUnit;
-      close(translationUnit->clientSocket);
+      std::cout << ex.what() << std::endl;
     }
   } catch (const std::exception &ex) {
     std::cout << ex.what();
@@ -206,7 +206,8 @@ int http::Server::acceptClientSocket(int serverSocket) {
     }
   } catch (const std::exception &ex) {
     delete scheduler;
-    close(serverSocket);
+    int closing = close(serverSocket);
+    handle(closing, -1, "Couldn't close fire descriptor");
     throw ex;
   }
 }
